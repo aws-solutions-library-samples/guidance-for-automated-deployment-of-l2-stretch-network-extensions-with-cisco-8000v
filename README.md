@@ -1,4 +1,4 @@
-# Guidance Title (required)
+# Guidance for L2 Stretch Network with Cisco 8000v on AWS
 
 The Guidance title should be consistent with the title established first in Alchemy.
 
