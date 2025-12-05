@@ -1,0 +1,702 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: "VPC template for simulated on-prem environment. "
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      - Label:
+          default: "Network Configuration"
+        Parameters:
+          - LispCloudVpcCidr
+          - LispCloudPublicSubnetCidr
+          - LispCloudPrivateSubnetCidr
+          - LispCloud8KvPrivateInterfaceIP
+      - Label:
+          default: "8Kv Instance Configuration"
+        Parameters:
+          - LispCloud8KvInstanceType
+          - Hostname
+          - AuthenticationType
+          - KeyName
+          - Username
+          - PrivilegePwd
+      - Label:
+          default: "LISP Configuration"
+        Parameters:
+          - LispCloudLoopback
+          - LispOnPremLoopback
+      - Label:
+          default: "IPSec Configuration"
+        Parameters:
+          - IPSecPreShareKey
+          - TunnelDestinationPublicIP
+      - Label:
+          default: "Security Configuration"
+        Parameters:
+          - ParticipantIPAddress
+      - Label:
+          default: "Application Server Configuration"
+        Parameters:
+          - DeployAppServer
+
+    ParameterLabels:
+      LispCloudVpcCidr:
+        default: "VPC CIDR"
+      LispCloudPublicSubnetCidr:
+        default: "Public Subnet CIDR"
+      LispCloudPrivateSubnetCidr:
+        default: "Private Subnet CIDR"
+      LispCloud8KvPrivateInterfaceIP:
+        default: "8Kv Private Interface IP (Optional)"
+      LispCloud8KvInstanceType:
+        default: "8Kv Instance Type"
+      Hostname:
+        default: "8Kv Hostname"
+      AuthenticationType:
+        default: "Authentication Type"
+      KeyName:
+        default: "SSH Key Pair"
+      Username:
+        default: "Username"
+      PrivilegePwd:
+        default: "Password"
+      LispCloudLoopback:
+        default: "Cloud LISP Loopback"
+      LispOnPremLoopback:
+        default: "On-Prem LISP Loopback"
+      IPSecPreShareKey:
+        default: "IPSec Pre-Shared Key"
+      TunnelDestinationPublicIP:
+        default: "Tunnel Destination IP"
+      ParticipantIPAddress:
+        default: "Participant IP Address"
+Parameters:
+  LispCloudVpcCidr:
+    AllowedPattern: "^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])(\\/(1[6-9]|2[0-8]))$"
+    ConstraintDescription: CIDR block parameter must be in the form x.x.x.x/16-28
+    Default: 172.16.0.0/16
+    Description: CIDR block for the VPC.  Needs to be a superset of the Lisp Private Subnet that will be stretched from on-prem to cloud.
+    Type: String
+  LispCloudPublicSubnetCidr:
+    AllowedPattern: "^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])(\\/(1[6-9]|2[0-8]))$"
+    ConstraintDescription: CIDR block parameter must be in the form x.x.x.x/16-28
+    Default: 172.16.0.0/24
+    Description: CIDR block for Public subnet
+    Type: String
+  LispCloudPrivateSubnetCidr:
+    AllowedPattern: "^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])(\\/(1[6-9]|2[0-8]))$"
+    ConstraintDescription: CIDR block parameter must be in the form x.x.x.x/16-28
+    Default: 172.16.1.0/24
+    Description: Lisp CIDR block that will be stretched from on-prem to cloud
+    Type: String
+  LispCloud8KvInstanceType:
+    AllowedValues:
+    - t3.medium
+    - c5.large
+    - c5.xlarge
+    - c5.2xlarge
+    - c5.4xlarge
+    - c5.9xlarge
+    - c5d.2xlarge
+    - c5n.large
+    - c5n.xlarge
+    - c5n.2xlarge
+    - c5n.4xlarge
+    - c5n.9xlarge
+    - c5n.18xlarge
+    - c6in.large
+    - c6in.2xlarge
+    - c6in.4xlarge
+    - c6in.8xlarge
+    Default: c5n.large
+    Description: on-prem 8kv EC2 instance types.
+    Type: String
+
+  ParticipantIPAddress:
+    Type: String
+    Description: 'What is your external IP address in the format x.x.x.x/32? This entry will be added to certain Security Groups. Find your IP at https://checkip.amazonaws.com/'
+    AllowedPattern: "^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])(\\/(32))$"
+    ConstraintDescription: must be a valid IP address of the form x.x.x.x/32.
+    Default: '1.2.3.4/32'
+  Hostname:
+    Description: Specify the hostname of the 8Kv router
+    Type: String
+  AuthenticationType:
+    Type: String
+    AllowedValues:
+      - KeyPair
+      - UsernamePassword
+    Default: KeyPair
+    Description: Choose authentication type for the Cisco router
+  KeyName:
+    Description: Must be a valid SSH key name or left blank if using UsernamePassword.
+    Type: String
+    Default: 'MyKeyPairName'
+  Username:
+    Description: Specify the username (required if AuthenticationType is UsernamePassword)
+    Type: String
+  PrivilegePwd:
+    Description: Specify the password (required if AuthenticationType is UsernamePassword)
+    NoEcho: 'True'
+    Type: String
+  LispCloudLoopback:
+    Description: Loopback address of AWS 8Kv Lisp Router
+    Type: String
+    Default: '33.33.33.33'
+  IPSecPreShareKey:
+    Description: PreShared key for IPSec IKEv1 tunnel. Also using this for Lisp Map Key
+    Type: String
+    NoEcho: 'True'
+  TunnelDestinationPublicIP:
+    Description: Public IP address of the on-prem Lisp Router
+    Type: String
+    Default: '12.34.56.78'
+  LispOnPremLoopback:
+    Description: Loopback address of on-prem Lisp Router
+    Type: String
+    Default: '11.11.11.11'
+  LispCloud8KvPrivateInterfaceIP:
+    Description: '(Optional) Manually specify the private IP address for the 8KV private interface (GigabitEthernet2). Leave empty for automatic assignment.'
+    Type: String
+    Default: ''
+
+Mappings:
+  AllowedAMIs:
+    us-east-1:
+      "8kv1713": ami-0f1ab0f93d85e0877
+      "8kv1715": ami-0f1ab0f93d85e0877
+      "AL23": ami-07caf09b362be10b8
+    us-west-2:
+      "8kv1713": ami-05b2621bc72190eeb
+      "8kv1715": ami-02b3ab92a7c4be8a7
+      "AL23": ami-0e1d35993cb249cee
+    eu-west-1:
+      "8kv1713": ami-03b92a46634e21ed7
+      "8kv1715": ami-03b92a46634e21ed7
+      "AL23": ami-0dfdc165e7af15242
+    us-west-1:
+      "8kv1713": ami-05e01ae5ec8886682
+      "8kv1715": ami-05e01ae5ec8886682
+      "AL23": ami-09021cbd462419e4c
+    ap-southeast-1:
+      "8kv1713": ami-0fddb10d8c67e3d75
+      "8kv1715": ami-0fddb10d8c67e3d75
+      "AL23": ami-05b46bc4327cf9d99
+  # !FindInMap [AllowedAMIs, !Ref 'AWS::Region', 8kv1713]
+  # !FindInMap [AllowedAMIs, !Ref 'AWS::Region', 8kv1715]
+  # !FindInMap [AllowedAMIs, !Ref 'AWS::Region', AL23]
+
+Conditions:
+  UseKeyPair: !Equals [!Ref AuthenticationType, KeyPair]
+  HasPrivateIP: !Not [!Equals [!Ref LispCloud8KvPrivateInterfaceIP, '']]
+
+Resources:
+
+  ## Instance profile
+  InstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      Path: /
+      Roles:
+       - !Ref Ec2InstanceRole
+
+  Ec2InstanceRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          -
+            Effect: Allow
+            Principal:
+              Service:
+                - ec2.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      Path: /
+      Tags:
+        - Key: Name
+          Value: !Sub '${AWS::StackName}-L2E-Instance-Role'
+
+  InstancePolicy:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyName: EC2Policy
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Action:
+              - ssm:DescribeAssociation
+              - ssm:GetDeployablePatchSnapshotForInstance
+              - ssm:GetDocument
+              - ssm:DescribeDocument
+              - ssm:GetManifest
+              - ssm:GetParameter
+              - ssm:GetParameters
+              - ssm:ListAssociations
+              - ssm:ListInstanceAssociations
+              - ssm:PutInventory
+              - ssm:PutComplianceItems
+              - ssm:PutConfigurePackageResult
+              - ssm:UpdateAssociationStatus
+              - ssm:UpdateInstanceAssociationStatus
+              - ssm:UpdateInstanceInformation
+            Resource: '*'
+          - Effect: Allow
+            Action:
+              - ssmmessages:CreateControlChannel
+              - ssmmessages:CreateDataChannel
+              - ssmmessages:OpenControlChannel
+              - ssmmessages:OpenDataChannel
+            Resource: '*'
+          - Effect: Allow
+            Action:
+              - ec2messages:AcknowledgeMessage
+              - ec2messages:DeleteMessage
+              - ec2messages:FailMessage
+              - ec2messages:GetEndpoint
+              - ec2messages:GetMessages
+              - ec2messages:SendReply
+            Resource: '*'
+          - Effect: Allow
+            Action:
+              - cloudformation:*
+            Resource: '*'
+      Roles:
+        -
+          !Ref Ec2InstanceRole
+
+
+  ## Data center resources
+  LispCloudVpc:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: !Ref LispCloudVpcCidr
+      EnableDnsHostnames: true
+      EnableDnsSupport: true
+      Tags:
+        - Key: Name
+          Value: !Sub 'Lisp Cloud VPC - ${AWS::StackName}'
+
+  LispCloudPrivateSubnet:
+    Type: AWS::EC2::Subnet
+    Properties:
+      AvailabilityZone: !Select
+        - 0
+        - Fn::GetAZs: !Ref 'AWS::Region'
+      CidrBlock: !Ref LispCloudPrivateSubnetCidr
+      MapPublicIpOnLaunch: false
+      Tags:
+        - Key: Name
+          Value: "Lisp Cloud Private Subnet"
+        - Key: SubnetType
+          Value: Private
+      VpcId: !Ref LispCloudVpc
+
+  LispCloudPrivateSubnetRouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref LispCloudPrivateRouteTable
+      SubnetId: !Ref LispCloudPrivateSubnet
+
+  LispCloudPublicSubnet:
+    Type: AWS::EC2::Subnet
+    Properties:
+      AvailabilityZone: !Select
+        - 0
+        - Fn::GetAZs: !Ref 'AWS::Region'
+      CidrBlock: !Ref LispCloudPublicSubnetCidr
+      MapPublicIpOnLaunch: false
+      Tags:
+        - Key: Name
+          Value:  "Lisp Cloud Public Subnet"
+        - Key: SubnetType
+          Value: Public
+      VpcId: !Ref LispCloudVpc
+
+  LispCloudPublicRouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref LispCloudPublicSubnet
+      RouteTableId: !Ref LispCloudPublicRouteTable
+
+  LispCloudInternetGateway:
+    Type: AWS::EC2::InternetGateway
+    Properties:
+      Tags:
+        - Key: Name
+          Value: "Lisp Cloud IGW"
+
+  LispCloudAttachInternetGateway:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      InternetGatewayId: !Ref LispCloudInternetGateway
+      VpcId: !Ref LispCloudVpc
+
+  LispCloudPublicRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      Tags:
+        - Key: Name
+          Value: "Lisp Cloud Public Route Table"
+        - Key: Network
+          Value: Public
+      VpcId: !Ref LispCloudVpc
+
+  LispCloudPublicRoute:
+    Type: AWS::EC2::Route
+    DependsOn:
+      - LispCloudAttachInternetGateway
+    Properties:
+      RouteTableId: !Ref LispCloudPublicRouteTable
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref LispCloudInternetGateway
+
+  LispCloudNatEIP:
+    Type: AWS::EC2::EIP
+    Properties:
+      Domain: vpc
+
+  LispCloudNatGateway:
+    Type: AWS::EC2::NatGateway
+    DependsOn: LispCloudAttachInternetGateway
+    Properties:
+      AllocationId: !GetAtt LispCloudNatEIP.AllocationId
+      SubnetId: !Ref LispCloudPublicSubnet
+      Tags:
+        - Key: Name
+          Value: "Lisp Cloud NATGW"
+
+  LispCloudPrivateRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      Tags:
+        - Key: Name
+          Value: "Lisp Cloud Private Route Table"
+        - Key: Network
+          Value: Private
+      VpcId: !Ref LispCloudVpc
+
+  LispCloudPrivateRouteNat:
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId: !Ref LispCloudPrivateRouteTable
+      DestinationCidrBlock: 0.0.0.0/0
+      NatGatewayId: !Ref LispCloudNatGateway
+
+
+  LispCloudAppServerSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Security group for app server
+      GroupName: !Sub "${AWS::StackName}-Lisp Cloud App Server Security Group"
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: "10.0.0.0/8"
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: "172.16.0.0/12"
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: "192.168.0.0/16"
+        - IpProtocol: icmp
+          CidrIp: 10.0.0.0/8
+          FromPort: "-1"
+          ToPort: "-1"
+        - IpProtocol: icmp
+          CidrIp: 172.16.0.0/12
+          FromPort: "-1"
+          ToPort: "-1"
+        - IpProtocol: icmp
+          CidrIp: 192.168.0.0/16
+          FromPort: "-1"
+          ToPort: "-1"        
+      VpcId: !Ref LispCloudVpc
+
+  LispCloud8KvSecurityGroupPublic:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Security group for Customer Gateway Server
+      GroupName: !Sub "${AWS::StackName}-Lisp Cloud 8Kv Public Security Group"
+      SecurityGroupIngress:
+        - IpProtocol: icmp
+          CidrIp: !Ref ParticipantIPAddress
+          FromPort: "-1"
+          ToPort: "-1"
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: !Ref ParticipantIPAddress
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: !Ref ParticipantIPAddress
+        - IpProtocol: tcp
+          FromPort: 443
+          ToPort: 443
+          CidrIp: !Ref ParticipantIPAddress    
+        - IpProtocol: udp
+          FromPort: 500
+          ToPort: 500
+          CidrIp: 0.0.0.0/0          
+        - IpProtocol: udp
+          FromPort: 4500
+          ToPort: 4500
+          CidrIp: 0.0.0.0/0  
+      VpcId: !Ref LispCloudVpc
+
+  LispCloud8KvSecurityGroupPrivate:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Security group for Customer Gateway Server
+      GroupName: !Sub "${AWS::StackName}-Lisp Cloud 8Kv Private Security Group"
+      SecurityGroupIngress:
+        - IpProtocol: "-1"
+          CidrIp: 10.0.0.0/8
+        - IpProtocol: "-1"
+          CidrIp: 172.16.0.0/12
+        - IpProtocol: "-1"
+          CidrIp: 192.168.0.0/16
+      VpcId: !Ref LispCloudVpc
+
+  LispCloud8KvPublicInterface:
+    Type: AWS::EC2::NetworkInterface
+    Properties:
+      SubnetId: !Ref LispCloudPublicSubnet
+      Description: Public Interface for Management
+      SourceDestCheck: false
+      GroupSet:
+        - !Ref LispCloud8KvSecurityGroupPublic
+      Tags:
+        - Key: Name
+          Value: !Sub 'Lisp Cloud - ${AWS::StackName}-Public-Interface'
+
+  LispCloud8KvPrivateInterface:
+    Type: AWS::EC2::NetworkInterface
+    Properties:
+      SubnetId: !Ref LispCloudPrivateSubnet
+      Description: Private Interface for Lisp
+      SourceDestCheck: false
+      PrivateIpAddress: !If
+        - HasPrivateIP
+        - !Ref LispCloud8KvPrivateInterfaceIP
+        - !Ref AWS::NoValue
+      GroupSet:
+        - !Ref LispCloud8KvSecurityGroupPrivate
+      Tags:
+        - Key: Name
+          Value: !Sub 'Lisp Cloud - ${AWS::StackName}-Private-Interface'
+
+  LispCloud8KvEIP:
+    Type: AWS::EC2::EIP
+    Properties:
+      Domain: vpc
+
+  LispCloud8KvEIPAssociation:
+    Type: AWS::EC2::EIPAssociation
+    DependsOn:
+      - C8KVInstance
+      - LispCloud8KvEth1Attachment
+    Properties:
+      AllocationId: !GetAtt LispCloud8KvEIP.AllocationId
+      NetworkInterfaceId: !Ref LispCloud8KvPublicInterface
+
+  C8KVInstance:
+    Type: 'AWS::EC2::Instance'
+    DependsOn:
+      - LispCloud8KvPrivateInterface
+    Properties:
+      InstanceType: !Ref LispCloud8KvInstanceType
+      ImageId: !FindInMap [AllowedAMIs, !Ref 'AWS::Region', 8kv1713]
+      KeyName: !If [UseKeyPair, !Ref KeyName, !Ref "AWS::NoValue"]
+      IamInstanceProfile: !Ref InstanceProfile
+      NetworkInterfaces:
+        - NetworkInterfaceId: !Ref LispCloud8KvPublicInterface
+          DeviceIndex: '0'
+      UserData:
+        Fn::Base64: !If
+          - UseKeyPair
+          - !Sub |
+            ios-config-1000=license boot level network-advantage addon dna-advantage
+            ios-config-1001=hostname ${Hostname}
+            ios-config-1003=interface Loopback1
+            ios-config-1004=ip address ${LispCloudLoopback} 255.255.255.255
+            ios-config-1005=interface GigabitEthernet2
+            ios-config-1006=ip address dhcp
+            ios-config-1007=lisp mobility subnet1
+            ios-config-1008=no shutdown
+            ios-config-1009=exit
+            ios-config-1010=crypto isakmp policy 200
+            ios-config-1011=encryption aes
+            ios-config-1012=hash sha
+            ios-config-1013=authentication pre-share
+            ios-config-1014=group 21
+            ios-config-1015=lifetime 28800
+            ios-config-1016=exit
+            ios-config-1017=crypto isakmp key ${IPSecPreShareKey} address 0.0.0.0
+            ios-config-1018=crypto isakmp keepalive 10 10
+            ios-config-1019=crypto ipsec transform-set dmvpn esp-aes esp-sha-hmac
+            ios-config-1020=mode tunnel
+            ios-config-1021=exit
+            ios-config-1022=crypto ipsec profile Catalyst8000v1
+            ios-config-1023=set transform-set dmvpn
+            ios-config-1024=exit
+            ios-config-1025=interface Tunnel0
+            ios-config-1026=ip address 12.0.0.2 255.255.255.0
+            ios-config-1027=ip mtu 1400
+            ios-config-1028=ip tcp adjust-mss 1360
+            ios-config-1029=tunnel source GigabitEthernet1
+            ios-config-1030=tunnel mode ipsec ipv4
+            ios-config-1031=tunnel destination ${TunnelDestinationPublicIP}
+            ios-config-1032=tunnel protection ipsec profile Catalyst8000v1
+            ios-config-1033=exit
+            ios-config-1034=interface LISP0
+            ios-config-1035=router lisp
+            ios-config-1036=locator-set cloud
+            ios-config-1037=${LispCloudLoopback} priority 1 weight 100
+            ios-config-1038=exit-locator-set
+            ios-config-1039=service ipv4
+            ios-config-1040=itr map-resolver ${LispOnPremLoopback}
+            ios-config-1041=itr
+            ios-config-1042=etr map-server ${LispOnPremLoopback} key ${IPSecPreShareKey}
+            ios-config-1043=etr
+            ios-config-1044=use-petr ${LispOnPremLoopback}
+            ios-config-1045=exit-service-ipv4
+            ios-config-1046=instance-id 0
+            ios-config-1047=dynamic-eid subnet1
+            ios-config-1048=database-mapping ${LispCloudPrivateSubnetCidr} locator-set cloud
+            ios-config-1049=map-notify-group 239.0.0.1
+            ios-config-1050=exit-dynamic-eid
+            ios-config-1051=service ipv4
+            ios-config-1052=eid-table default
+            ios-config-1053=exit-service-ipv4
+            ios-config-1054=exit-instance-id
+            ios-config-1055=exit-router-lisp
+            ios-config-1056=router ospf 1
+            ios-config-1057=network 12.0.0.0 0.0.0.255 area 0
+            ios-config-1058=network ${LispCloudLoopback} 0.0.0.0 area 0
+          - !Sub |
+            ios-config-1000=license boot level network-advantage addon dna-advantage
+            ios-config-1001=hostname ${Hostname}
+            ios-config-1002=username ${Username} privilege 15 secret ${PrivilegePwd}
+            ios-config-1003=interface Loopback1
+            ios-config-1004=ip address ${LispCloudLoopback} 255.255.255.255
+            ios-config-1005=interface GigabitEthernet2
+            ios-config-1006=ip address dhcp
+            ios-config-1007=lisp mobility subnet1
+            ios-config-1008=no shutdown
+            ios-config-1009=exit
+            ios-config-1010=crypto isakmp policy 200
+            ios-config-1011=encryption aes
+            ios-config-1012=hash sha
+            ios-config-1013=authentication pre-share
+            ios-config-1014=group 21
+            ios-config-1015=lifetime 28800
+            ios-config-1016=exit
+            ios-config-1017=crypto isakmp key ${IPSecPreShareKey} address 0.0.0.0
+            ios-config-1018=crypto isakmp keepalive 10 10
+            ios-config-1019=crypto ipsec transform-set dmvpn esp-aes esp-sha-hmac
+            ios-config-1020=mode tunnel
+            ios-config-1021=exit
+            ios-config-1022=crypto ipsec profile Catalyst8000v1
+            ios-config-1023=set transform-set dmvpn
+            ios-config-1024=exit
+            ios-config-1025=interface Tunnel0
+            ios-config-1026=ip address 12.0.0.2 255.255.255.0
+            ios-config-1027=ip mtu 1400
+            ios-config-1028=ip tcp adjust-mss 1360
+            ios-config-1029=tunnel source GigabitEthernet1
+            ios-config-1030=tunnel mode ipsec ipv4
+            ios-config-1031=tunnel destination ${TunnelDestinationPublicIP}
+            ios-config-1032=tunnel protection ipsec profile Catalyst8000v1
+            ios-config-1033=exit
+            ios-config-1034=interface LISP0
+            ios-config-1035=router lisp
+            ios-config-1036=locator-set cloud
+            ios-config-1037=${LispCloudLoopback} priority 1 weight 100
+            ios-config-1038=exit-locator-set
+            ios-config-1039=service ipv4
+            ios-config-1040=itr map-resolver ${LispOnPremLoopback}
+            ios-config-1041=itr
+            ios-config-1042=etr map-server ${LispOnPremLoopback} key ${IPSecPreShareKey}
+            ios-config-1043=etr
+            ios-config-1044=use-petr ${LispOnPremLoopback}
+            ios-config-1045=exit-service-ipv4
+            ios-config-1046=instance-id 0
+            ios-config-1047=dynamic-eid subnet1
+            ios-config-1048=database-mapping ${LispCloudPrivateSubnetCidr} locator-set cloud
+            ios-config-1049=map-notify-group 239.0.0.1
+            ios-config-1050=exit-dynamic-eid
+            ios-config-1051=service ipv4
+            ios-config-1052=eid-table default
+            ios-config-1053=exit-service-ipv4
+            ios-config-1054=exit-instance-id
+            ios-config-1055=exit-router-lisp
+            ios-config-1056=router ospf 1
+            ios-config-1057=network 12.0.0.0 0.0.0.255 area 0
+            ios-config-1058=network ${LispCloudLoopback} 0.0.0.0 area 0
+      Tags:
+        - Key: Name
+          Value: !Sub 'Lisp Cloud 8KV - ${AWS::StackName}'
+
+  LispCloud8KvEth1Attachment:
+    Type: 'AWS::EC2::NetworkInterfaceAttachment'
+    Properties:
+      DeleteOnTermination: true
+      DeviceIndex: 1
+      NetworkInterfaceId: !Ref LispCloud8KvPrivateInterface
+      InstanceId: !Ref C8KVInstance
+
+  LispCloudAppServer:
+    Type: AWS::EC2::Instance
+    DependsOn: 
+      - LispCloudPrivateRouteNat
+    Properties:
+      IamInstanceProfile: !Ref InstanceProfile
+      ImageId: !FindInMap [AllowedAMIs, !Ref 'AWS::Region', AL23]
+      InstanceType: 't3.micro'
+      # PrivateIpAddress: 172.16.1.100
+      SecurityGroupIds:
+        - !Ref LispCloudAppServerSecurityGroup
+      SubnetId: !Ref LispCloudPrivateSubnet
+      UserData:
+        Fn::Base64: |
+          #!/bin/bash
+          # set up web server
+          dnf install -y httpd
+          echo "Hello, world." > /var/www/html/index.html
+          systemctl enable httpd.service
+          systemctl start httpd.service
+      Tags:
+        - Key: Name
+          Value: !Sub "Lisp Cloud App Server - ${AWS::StackName}"
+
+
+
+Outputs:
+  LispCloudVpc:
+    Value: !Ref LispCloudVpc
+  LispCloudVpcCidr:
+    Value: !Ref LispCloudVpcCidr
+  LispCloudPublicSubnet:
+    Value: !Ref LispCloudPublicSubnet
+  LispCloudPrivateSubnet:
+    Value: !Ref LispCloudPrivateSubnet
+  LispCloud8KvSecurityGroupPublic:
+    Value: !Ref LispCloud8KvSecurityGroupPublic
+  LispCloud8KvSecurityGroupPrivate:
+    Value: !Ref LispCloud8KvSecurityGroupPrivate
+  LispCloud8KvPublicIp:
+    Value: !Ref LispCloud8KvEIP
+  C8KVInstanceId:
+    Description: The instance ID of the C8KV router
+    Value: !Ref C8KVInstance
+  LispCloud8KvPrivateInterfaceId:
+    Description: The network interface ID of the C8KV private ENI (GigabitEthernet2)
+    Value: !Ref LispCloud8KvPrivateInterface
+  LispCloudAppServerPrivateIp:
+    Value: !GetAtt LispCloudAppServer.PrivateIp
