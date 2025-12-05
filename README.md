@@ -33,22 +33,22 @@ Many enterprise applications, particularly legacy systems, have hardcoded IP add
 **Architecture Overview:**
 
 ```
-┌─────────────────────┐    IPSec/LISP Tunnel    ┌─────────────────────┐
-│   On-Premises       │◄─────────────────────────►│     AWS Cloud       │
-│   VMware vSphere    │                          │                     │
-│                     │                          │                     │
-│  ┌───────────────┐  │                          │  ┌───────────────┐  │
-│  │ Cisco 8000V   │  │                          │  │ Cisco 8000V   │  │
-│  │ (Physical or  │  │                          │  │ (EC2 Instance) │  │
-│  │  Virtual)     │  │                          │  │               │  │
-│  └───────────────┘  │                          │  └───────────────┘  │
-│         │            │                          │         │           │
-│  ┌─────────────┐     │                          │  ┌─────────────┐    │
-│  │  Extended   │     │                          │  │  Extended   │    │
-│  │  Subnet     │     │                          │  │  Subnet     │    │
-│  │172.16.1.0/24│     │                          │  │172.16.1.0/24│    │
-│  └─────────────┘     │                          │  └─────────────┘    │
-└─────────────────────┐                          └─────────────────────┘
+┌──────────────────────┐    IPSec/LISP Tunnel      ┌─────────────────────┐
+│   On-Premises        │◄─────────────────────────►│     AWS Cloud       │
+│   VMware vSphere     │                           │                     │
+│                      │                           │                     │
+│  ┌───────────────┐   │                           │  ┌───────────────┐  │
+│  │ Cisco 8000V   │   │                           │  │ Cisco 8000V   │  │
+│  │ (Physical or  │   │                           │  │ (EC2 Instance)│  │
+│  │  Virtual)     │   │                           │  │               │  │
+│  └───────────────┘   │                           │  └───────────────┘  │
+│         │            │                           │         │           │
+│  ┌─────────────┐     │                           │  ┌─────────────┐    │
+│  │  Extended   │     │                           │  │  Extended   │    │
+│  │  Subnet     │     │                           │  │  Subnet     │    │
+│  │172.16.1.0/24│     │                           │  │172.16.1.0/24│    │
+│  └─────────────┘     │                           │  └─────────────┘    │
+└──────────────────────┘                           └─────────────────────┘
 ```
 
 **High-Level Architecture Flow:**
@@ -72,10 +72,10 @@ The following table provides a sample cost breakdown for deploying this Guidance
 
 | AWS Service | Dimensions | Cost [USD] |
 | ----------- | ------------ | ------------ |
-| Amazon EC2 (Cisco 8000V) | c5n.large instance, 730 hours/month | $88.69/month |
+| Amazon EC2 (Cisco 8000V) | c5n.large instance, 730 hours/month | $78.84/month |
 | Amazon EC2 (Test Instance) | t3.micro instance, 730 hours/month | $7.59/month |
-| Elastic IP Address | 1 EIP attached to 8000V | $0.00 |
-| NAT Gateway | 1 NAT Gateway, 100 GB processed | $32.85/month |
+| Elastic IP Address | 1 EIP attached to 8000V, 730 hours/month | $3.65/month |
+| NAT Gateway | 1 NAT Gateway, 100 GB processed | $37.35/month |
 | VPC | Standard VPC, subnet, routing | $0.00 |
 | Data Transfer | 100 GB out to Internet | $9.00/month |
 | **Total Estimated Cost** | | **~$138.13/month** |
@@ -83,8 +83,8 @@ The following table provides a sample cost breakdown for deploying this Guidance
 **Note:** Costs will vary based on:
 - Instance type selection (larger instances for higher throughput)
 - Data transfer volumes
-- Additional secondary IPs or IPv4 prefixes
-- Multi-AZ deployments for high availability
+- EC2/Compute Savings plans (recommended)
+- Cisco C8000v License cost (purchased directly with Cisco/Partner)
 
 ## Prerequisites
 

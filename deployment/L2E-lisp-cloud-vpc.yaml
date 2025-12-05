@@ -14,6 +14,7 @@ Metadata:
           default: "8Kv Instance Configuration"
         Parameters:
           - LispCloud8KvInstanceType
+          - LispCloud8KvVersion
           - Hostname
           - AuthenticationType
           - KeyName
@@ -49,6 +50,8 @@ Metadata:
         default: "8Kv Private Interface IP (Optional)"
       LispCloud8KvInstanceType:
         default: "8Kv Instance Type"
+      LispCloud8KvVersion:
+        default: "8Kv Software Version"
       Hostname:
         default: "8Kv Hostname"
       AuthenticationType:
@@ -69,6 +72,8 @@ Metadata:
         default: "Tunnel Destination IP"
       ParticipantIPAddress:
         default: "Participant IP Address"
+      DeployAppServer:
+        default: "Deploy Application Server"
 Parameters:
   LispCloudVpcCidr:
     AllowedPattern: "^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])(\\/(1[6-9]|2[0-8]))$"
@@ -109,6 +114,14 @@ Parameters:
     - c6in.8xlarge
     Default: c5n.large
     Description: on-prem 8kv EC2 instance types.
+    Type: String
+  LispCloud8KvVersion:
+    AllowedValues:
+    - 8kv17908
+    - 8kv171301a
+    - 8kv171503a
+    Default: 8kv171503a
+    Description: Cisco 8000v software version (17.09.08, 17.13.01a, or 17.15.03a)
     Type: String
 
   ParticipantIPAddress:
@@ -158,36 +171,164 @@ Parameters:
     Description: '(Optional) Manually specify the private IP address for the 8KV private interface (GigabitEthernet2). Leave empty for automatic assignment.'
     Type: String
     Default: ''
+  DeployAppServer:
+    Description: 'Choose whether to deploy the application server in the private subnet'
+    Type: String
+    AllowedValues:
+      - 'Yes'
+      - 'No'
+    Default: 'Yes'
+  LatestAmiId:
+    Type: 'AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>'
+    Default: '/aws/service/ami-amazon-linux-latest/al2023-ami-minimal-kernel-default-x86_64'
+    Description: 'SSM parameter for the latest Amazon Linux 2023 AMI'
 
 Mappings:
   AllowedAMIs:
-    us-east-1:
-      "8kv1713": ami-0f1ab0f93d85e0877
-      "8kv1715": ami-0f1ab0f93d85e0877
-      "AL23": ami-07caf09b362be10b8
-    us-west-2:
-      "8kv1713": ami-05b2621bc72190eeb
-      "8kv1715": ami-02b3ab92a7c4be8a7
-      "AL23": ami-0e1d35993cb249cee
-    eu-west-1:
-      "8kv1713": ami-03b92a46634e21ed7
-      "8kv1715": ami-03b92a46634e21ed7
-      "AL23": ami-0dfdc165e7af15242
+    ap-south-2:
+      "8kv17908": ami-0dcd80c567e20ebd7
+      "8kv171301a": ami-0c2115c189f22852a
+      "8kv171503a": ami-02c636f8754f9b0ea
+    ap-south-1:
+      "8kv17908": ami-0653de58c21d7d093
+      "8kv171301a": ami-0c9cc0bc8b46eb58d
+      "8kv171503a": ami-04118d3492a23db57
+    eu-south-1:
+      "8kv17908": ami-0e72fb40da5986ddb
+      "8kv171301a": ami-0f9439e8bb999a48b
+      "8kv171503a": ami-08d30e37529f15cba
+    eu-south-2:
+      "8kv17908": ami-0f2f3437866e4b67e
+      "8kv171301a": ami-0bc6f6a9456a1cb71
+      "8kv171503a": ami-03dd1d42475210cba
+    us-gov-east-1:
+      "8kv17908": ami-0c9fcc7a7aa128705
+      "8kv171301a": ami-0f0b03b13aaeacc85
+      "8kv171503a": ami-093ac6e6a84c79c95
+    me-central-1:
+      "8kv17908": ami-027c5a325b9763fd9
+      "8kv171301a": ami-0114be1212ce0d403
+      "8kv171503a": ami-02904036f71dda87e
+    il-central-1:
+      "8kv17908": ami-02029fda34ed57c66
+      "8kv171301a": ami-09ca8b3346cd6af06
+      "8kv171503a": ami-0a39a0db54f7bf90d
+    ca-central-1:
+      "8kv17908": ami-0198c289090e6691c
+      "8kv171301a": ami-001b2104f7ea08d21
+      "8kv171503a": ami-063374ae965b30dca
+    ap-east-2:
+      "8kv17908": ami-020718a3fba468c63
+      "8kv171503a": ami-0ce8d221a4fe93d8a
+    mx-central-1:
+      "8kv17908": ami-07799ab36d09305e1
+      "8kv171503a": ami-0363427fa77ffb2ad
+    eu-central-1:
+      "8kv17908": ami-00723f3ea1b9815c1
+      "8kv171301a": ami-0942457c503f2405b
+      "8kv171503a": ami-077215ff54467ea95
+    eu-central-2:
+      "8kv17908": ami-0e0e30498d969af68
+      "8kv171301a": ami-08da6822d3e0dcb19
+      "8kv171503a": ami-0a1f4d28e358fe680
     us-west-1:
-      "8kv1713": ami-05e01ae5ec8886682
-      "8kv1715": ami-05e01ae5ec8886682
-      "AL23": ami-09021cbd462419e4c
+      "8kv17908": ami-054fc140b6560db2f
+      "8kv171301a": ami-05e01ae5ec8886682
+      "8kv171503a": ami-0f6e6c3ae1f4cbf49
+    us-west-2:
+      "8kv17908": ami-0e02f32d4fcb724c5
+      "8kv171301a": ami-05b2621bc72190eeb
+      "8kv171503a": ami-02a61be454179a787
+    af-south-1:
+      "8kv17908": ami-0c84a36c009bd4e57
+      "8kv171301a": ami-0292f3bdcff7d953a
+      "8kv171503a": ami-066385ce815eaaa63
+    eu-north-1:
+      "8kv17908": ami-0d4cdcbb549b151a1
+      "8kv171301a": ami-0bbf702dc71acc8da
+      "8kv171503a": ami-011a761bb04bff5fe
+    eu-west-3:
+      "8kv17908": ami-070a44b929803ee63
+      "8kv171301a": ami-082d6ba099f799a1f
+      "8kv171503a": ami-0014cf12ee88c78f7
+    eu-west-2:
+      "8kv17908": ami-0844cb84997ffa231
+      "8kv171301a": ami-007c5f3c716e24ed2
+      "8kv171503a": ami-07564b5c5d2d32f5b
+    eu-west-1:
+      "8kv17908": ami-097350f52fddd4ed2
+      "8kv171301a": ami-03b92a46634e21ed7
+      "8kv171503a": ami-0d3fa9a2cacc632d8
+    ap-northeast-3:
+      "8kv17908": ami-06ce7d64716df10d8
+      "8kv171301a": ami-0c1d1a146a4590971
+      "8kv171503a": ami-053064dba466667e0
+    ap-northeast-2:
+      "8kv17908": ami-0e2029c1f5bb53d2d
+      "8kv171301a": ami-02cdcf8383e89e8ed
+      "8kv171503a": ami-052ef5269a15967e8
+    ap-northeast-1:
+      "8kv17908": ami-03aef4ecb8d16030d
+      "8kv171301a": ami-0eb8b28cc2898103a
+      "8kv171503a": ami-0729182b03d65e389
+    me-south-1:
+      "8kv17908": ami-0b0509ac95f5e8956
+      "8kv171301a": ami-03c7d83f470012307
+      "8kv171503a": ami-0dbe9f6c2c51740dd
+    sa-east-1:
+      "8kv17908": ami-0ec274a41420f19a1
+      "8kv171301a": ami-07fdce1b3f8437cd1
+      "8kv171503a": ami-09db3c2f120ceb1b7
+    ap-east-1:
+      "8kv17908": ami-0bbd1d8da392679e5
+      "8kv171301a": ami-0d6cf340c17b02ae2
+      "8kv171503a": ami-00dfc99a728f3d5b6
+    us-gov-west-1:
+      "8kv17908": ami-0b48f9d33b41194ce
+      "8kv171301a": ami-0570a66b21471e5d8
+      "8kv171503a": ami-0e368b4310dc08a71
+    ca-west-1:
+      "8kv17908": ami-0f62aed78330a1b11
+      "8kv171301a": ami-0962d57684319eac3
+      "8kv171503a": ami-0f79c5b8aa9418db7
     ap-southeast-1:
-      "8kv1713": ami-0fddb10d8c67e3d75
-      "8kv1715": ami-0fddb10d8c67e3d75
-      "AL23": ami-05b46bc4327cf9d99
-  # !FindInMap [AllowedAMIs, !Ref 'AWS::Region', 8kv1713]
-  # !FindInMap [AllowedAMIs, !Ref 'AWS::Region', 8kv1715]
-  # !FindInMap [AllowedAMIs, !Ref 'AWS::Region', AL23]
+      "8kv17908": ami-06ee0541d514cd432
+      "8kv171301a": ami-0fddb10d8c67e3d75
+      "8kv171503a": ami-0f06fb3378c741526
+    ap-southeast-2:
+      "8kv17908": ami-005e3d0feb916181b
+      "8kv171301a": ami-0412ea334f9b90803
+      "8kv171503a": ami-032de1e8b14850a8c
+    ap-southeast-3:
+      "8kv17908": ami-08ecfc929b870fee1
+      "8kv171301a": ami-05463787b62ea9fe2
+      "8kv171503a": ami-00523d14cc1548d4e
+    ap-southeast-4:
+      "8kv17908": ami-0d7f791a709d6985c
+      "8kv171301a": ami-026a8d1bf14e0a00e
+      "8kv171503a": ami-07702ceacad361056
+    ap-southeast-5:
+      "8kv17908": ami-091e836617e833555
+      "8kv171503a": ami-025b572c2541dccfe
+    us-east-1:
+      "8kv17908": ami-05a02b3d5ba9f0b22
+      "8kv171301a": ami-0f1ab0f93d85e0877
+      "8kv171503a": ami-03cc286883c62bdee
+    us-east-2:
+      "8kv17908": ami-041781521912933e1
+      "8kv171301a": ami-073d0f81e96822a78
+      "8kv171503a": ami-0d7d4497d28e10fe8
+    ap-southeast-7:
+      "8kv17908": ami-081df5673f42268ae
+      "8kv171503a": ami-099141aea9fbf4865
+  # !FindInMap [AllowedAMIs, !Ref 'AWS::Region', 8kv17908]
+  # !FindInMap [AllowedAMIs, !Ref 'AWS::Region', 8kv171301a]
+  # !FindInMap [AllowedAMIs, !Ref 'AWS::Region', 8kv171503a]
 
 Conditions:
   UseKeyPair: !Equals [!Ref AuthenticationType, KeyPair]
   HasPrivateIP: !Not [!Equals [!Ref LispCloud8KvPrivateInterfaceIP, '']]
+  ShouldDeployAppServer: !Equals [!Ref DeployAppServer, 'Yes']
 
 Resources:
 
@@ -387,6 +528,7 @@ Resources:
 
   LispCloudAppServerSecurityGroup:
     Type: AWS::EC2::SecurityGroup
+    Condition: ShouldDeployAppServer
     Properties:
       GroupDescription: Security group for app server
       GroupName: !Sub "${AWS::StackName}-Lisp Cloud App Server Security Group"
@@ -511,7 +653,7 @@ Resources:
       - LispCloud8KvPrivateInterface
     Properties:
       InstanceType: !Ref LispCloud8KvInstanceType
-      ImageId: !FindInMap [AllowedAMIs, !Ref 'AWS::Region', 8kv1713]
+      ImageId: !FindInMap [AllowedAMIs, !Ref 'AWS::Region', !Ref LispCloud8KvVersion]
       KeyName: !If [UseKeyPair, !Ref KeyName, !Ref "AWS::NoValue"]
       IamInstanceProfile: !Ref InstanceProfile
       NetworkInterfaces:
@@ -653,11 +795,12 @@ Resources:
 
   LispCloudAppServer:
     Type: AWS::EC2::Instance
+    Condition: ShouldDeployAppServer
     DependsOn: 
       - LispCloudPrivateRouteNat
     Properties:
       IamInstanceProfile: !Ref InstanceProfile
-      ImageId: !FindInMap [AllowedAMIs, !Ref 'AWS::Region', AL23]
+      ImageId: !Ref LatestAmiId
       InstanceType: 't3.micro'
       # PrivateIpAddress: 172.16.1.100
       SecurityGroupIds:
@@ -699,4 +842,5 @@ Outputs:
     Description: The network interface ID of the C8KV private ENI (GigabitEthernet2)
     Value: !Ref LispCloud8KvPrivateInterface
   LispCloudAppServerPrivateIp:
+    Condition: ShouldDeployAppServer
     Value: !GetAtt LispCloudAppServer.PrivateIp
