@@ -767,5 +767,5 @@ For any feedback, questions, or suggestions, please use the issues tab under thi
 
 ## Authors
 
-- AWS Solutions Architecture Team
-- Cisco Systems, Inc.
+- AWS Sr. Partner Solutions Architect: Josh Leatham, jlleatha@amazon.com
+
