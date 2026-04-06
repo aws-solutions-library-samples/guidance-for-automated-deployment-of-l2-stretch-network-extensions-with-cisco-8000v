@@ -13,11 +13,8 @@
 5. [Running the Guidance](#running-the-guidance)
 6. [Next Steps](#next-steps)
 7. [Cleanup](#cleanup)
-8. [Notices](#notices)
-
-### Optional
-
-9. [FAQ, known issues, additional considerations, and limitations](#faq-known-issues-additional-considerations-and-limitations)
+8. [Licenses](#license)
+9. [Notices](#notices)
 10. [Authors](#authors)
 
 ## Overview
@@ -761,11 +758,14 @@ aws cloudformation describe-stacks \
 
 For any feedback, questions, or suggestions, please use the issues tab under this repo.
 
+## License
+This project is licensed under the MIT-0 No attribution License. See the [LICENSE](LICENSE) file.
+
 ## Notices
 
 *Customers are responsible for making their own independent assessment of the information in this Guidance. This Guidance: (a) is for informational purposes only, (b) represents AWS current product offerings and practices, which are subject to change without notice, and (c) does not create any commitments or assurances from AWS and its affiliates, suppliers or licensors. AWS products or services are provided "as is" without warranties, representations, or conditions of any kind, whether express or implied. AWS responsibilities and liabilities to its customers are controlled by AWS agreements, and this Guidance is not part of, nor does it modify, any agreement between AWS and its customers.*
 
 ## Authors
 
-- AWS Sr. Partner Solutions Architect: Josh Leatham, jlleatha@amazon.com
+- Josh Leatham, AWS Sr. Partner Solutions Architect: jlleatha@amazon.com
 
