@@ -5,17 +5,18 @@
 ### Required
 
 1. [Overview](#overview)
+    - [Architecture](#architecture)
     - [Cost](#cost)
-2. [Prerequisites](#prerequisites)
+3. [Prerequisites](#prerequisites)
     - [Operating System](#operating-system)
-3. [Deployment Steps](#deployment-steps)
-4. [Deployment Validation](#deployment-validation)
-5. [Running the Guidance](#running-the-guidance)
-6. [Next Steps](#next-steps)
-7. [Cleanup](#cleanup)
-8. [Licenses](#license)
-9. [Notices](#notices)
-10. [Authors](#authors)
+4. [Deployment Steps](#deployment-steps)
+5. [Deployment Validation](#deployment-validation)
+6. [Running the Guidance](#running-the-guidance)
+7. [Next Steps](#next-steps)
+8. [Cleanup](#cleanup)
+9. [Licenses](#license)
+10. [Notices](#notices)
+11. [Authors](#authors)
 
 ## Overview
 
@@ -27,7 +28,9 @@ Many enterprise applications, particularly legacy systems, have hardcoded IP add
 
 **Note:** This Guidance focuses on the AWS cloud-side infrastructure deployment. A companion CloudFormation template (`L2E-lisp-on-prem-vpc-v3.yaml`) is provided for lab testing purposes to simulate an on-premises environment within AWS, but production deployments would connect to actual on-premises Cisco routers.
 
-**Architecture Overview:**
+## Architecture
+
+**Hgh Level Architecture Overview:**
 
 ```
 ┌──────────────────────┐    IPSec/LISP Tunnel      ┌─────────────────────┐
@@ -57,11 +60,33 @@ Many enterprise applications, particularly legacy systems, have hardcoded IP add
 5. **OSPF Routing**: Provides routing protocol convergence between sites
 6. **Layer 2 Extension**: Allows VMs in the extended subnet to communicate seamlessly across sites
 
+**Detailed Reference Architecture**
 
+<img width="50%" height="50%" alt="image" src="assets/cisco-8000v-reference-architecture.png" />
+
+**Detailed Reference Architecture Flow**
+
+1. AWS CloudFormation deploys the infrastructure, provisioning both the AWS Cloud and on-premises Cisco Catalyst 8000V routers with pre-configured LISP, IPSec, and OSPF settings.
+
+2. A secure IPSec tunnel is established between the on-premises Cisco Catalyst 8000V via Virtual Network Interface Card 1 (vNIC1) and the AWS Cisco Catalyst 8000V via Elastic Network Interface1 (ENI1) through the AWS Internet Gateway.
+
+3. The LISP protocol initializes on both routers, separating endpoint identifiers (EIDs) from routing locators (RLOCs) to enable Layer 2 network extension.
+
+4. Secondary IP addresses are configured on router interfaces, Elastic Network Interface2 (ENI2) on the AWS side. vNIC2 on-prem learns hosts directly through ARP broadcasts.  This activate the Layer 2 extension capability.
+
+5. Traffic originates from either environment, whether from on-premises application virtual machines (App VM1: 172.16.1.249, App VM2: 172.16.1.250) or from the AWS Cloud (App Instance: 172.16.1.179).
+
+6. The Cisco Catalyst 8000V (either on-premises or AWS Cloud) encapsulates Layer 2 frames with LISP headers to enable transport across Layer 3 networks.
+
+7. The encapsulated traffic is encrypted using IPSec and transmitted through the secure tunnel via the AWS Internet Gateway on the AWS Cloud side and Firewall on the Corporate data center
+
+8. The destination Cisco Catalyst 8000V (either AWS Cloud or on-premises) decrypts and decapsulates the traffic, then routes it to the appropriate subnet via ENI2 or vNIC2.
+
+9. The packets reach their destination application, maintaining the original Layer 2 addressing throughout the entire flow regardless of traffic direction.
 
 ### Cost
 
-You are responsible for the cost of the AWS services used while running this Guidance. As of November 2024, the cost for running this Guidance with the default settings in the US East (N. Virginia) Region is approximately **$150-$200 per month** for a basic deployment with c5n.large instance type.
+You are responsible for the cost of the AWS services used while running this Guidance. As of November 2024, the cost for running this Guidance with the default settings in the US East (N. Virginia) Region is approximately **$150-$200 per month** for a basic deployment with `c5n.large` instance type.
 
 We recommend creating a [Budget](https://docs.aws.amazon.com/cost-management/latest/userguide/budgets-managing-costs.html) through [AWS Cost Explorer](https://aws.amazon.com/aws-cost-management/aws-cost-explorer/) to help manage costs. Prices are subject to change. For full details, refer to the pricing webpage for each AWS service used in this Guidance.
 
@@ -136,11 +161,11 @@ pip install taskcat
 
 **Critical Service Limits:**
 
-- **EC2 Instance Limits**: Ensure your account has sufficient quota for c5n.large instances (or your chosen instance type)
+- **EC2 Instance Limits**: Ensure your account has sufficient quota for `c5n.large` instances (or your chosen instance type)
 - **Elastic Network Interfaces**: Each deployment requires multiple ENIs
 - **IPv4 CIDR Blocks**: Ensure your chosen CIDR blocks don't conflict with existing VPCs
 - **Secondary Private IPs per ENI**: Default limit is ~50 per ENI (varies by instance type)
-- **IPv4 Prefixes per ENI**: Scales better than secondary IPs (up to 464 IPs on c5n.4xlarge with 29 prefixes)
+- **IPv4 Prefixes per ENI**: Scales better than secondary IPs (up to 464 IPs on `c5n.4xlarge` with 29 prefixes)
 
 To request limit increases, visit the [AWS Service Quotas console](https://console.aws.amazon.com/servicequotas/).
 
@@ -482,14 +507,14 @@ ping <on-prem-server-ip>
 
 ### 5. Configure IPv4 Prefixes for Scale (Optional)
 
-For deployments requiring Layer 2 extension support for many on-premises endpoints, IPv4 prefixes provide superior scalability compared to individual secondary IP addresses. Instead of managing IPs one at a time (limited to ~50 per ENI), IPv4 prefixes allow you to allocate entire /28 subnets to the Cisco 8000V's private network interface. Each /28 prefix provides 16 usable IP addresses, and instance types like c5n.4xlarge support up to 29 prefixes, enabling connectivity for up to 464 on-premises endpoints through a single Cisco 8000V instance.
+For deployments requiring Layer 2 extension support for many on-premises endpoints, IPv4 prefixes provide superior scalability compared to individual secondary IP addresses. Instead of managing IPs one at a time (limited to ~50 per ENI), IPv4 prefixes allow you to allocate entire /28 subnets to the Cisco 8000V's private network interface. Each /28 prefix provides 16 usable IP addresses, and instance types like `c5n.4xlarge` support up to 29 prefixes, enabling connectivity for up to 464 on-premises endpoints through a single Cisco 8000V instance.
 
 This approach is essential for enterprise migrations where hundreds of on-premises servers with static IP addresses need to maintain their addresses while moving workloads to AWS. The prefixes enable the LISP protocol to properly register and route traffic for all on-premises endpoint IPs through the Layer 2 extension tunnel.
 
 **Scalability with IPv4 Prefixes:**
-- c5n.large: Up to 144 IPs (9 prefixes × 16 IPs each)
-- c5n.2xlarge: Up to 224 IPs (14 prefixes × 16 IPs each)
-- c5n.4xlarge: Up to 464 IPs (29 prefixes × 16 IPs each)
+- `c5n.large`: Up to 144 IPs (9 prefixes × 16 IPs each)
+- `c5n.2xlarge`: Up to 224 IPs (14 prefixes × 16 IPs each)
+- `c5n.4xlarge`: Up to 464 IPs (29 prefixes × 16 IPs each)
 
 #### Step 1: Retrieve the Private ENI ID
 
@@ -638,7 +663,7 @@ Enhance your deployment with these recommendations:
 
 ### 4. Performance Optimization
 
-- Upgrade to larger instance types for higher throughput (c5n.2xlarge, c5n.4xlarge)
+- Upgrade to larger instance types for higher throughput (`c5n.2xlarge`, `c5n.4xlarge`)
 - Enable Enhanced Networking (already enabled on c5n instances)
 - Configure MTU optimization for tunnel overhead
 - Implement QoS policies for traffic prioritization
@@ -726,7 +751,7 @@ aws cloudformation describe-stacks \
 **Issue 3: Maximum Secondary IPs Reached**
 - **Symptom**: Cannot add more secondary IPs to the private network interface
 - **Cause**: Hit ENI secondary IP limit (~50 for most instance types)
-- **Resolution**: Use IPv4 prefixes instead - they provide better scalability (up to 464 IPs on c5n.4xlarge)
+- **Resolution**: Use IPv4 prefixes instead - they provide better scalability (up to 464 IPs on `c5n.4xlarge`)
 
 ### Additional Considerations
 
@@ -752,7 +777,7 @@ aws cloudformation describe-stacks \
 
 - **Maximum Endpoints per 8000V Instance**: Limited by ENI IP capacity:
   - ~50 endpoints with secondary IPs only
-  - Up to 464 endpoints with IPv4 prefixes (c5n.4xlarge)
+  - Up to 464 endpoints with IPv4 prefixes (`c5n.4xlarge`)
 - **Supported Instance Types**: Cisco 8000V requires compute-optimized instances (c5/c5n/c6in family)
 - **IPv6**: This Guidance focuses on IPv4; IPv6 support requires additional LISP configuration
 - **Multicast**: LISP-based L2E has limited multicast support (some multicast may not work)
@@ -771,4 +796,5 @@ This project is licensed under the MIT-0 No attribution License. See the [LICENS
 ## Authors
 
 - Josh Leatham, AWS Sr. Partner Solutions Architect: jlleatha@amazon.com
-
+- Craig Herring, AWS Sr. Specialist SA: crherrin@amazon.com
+- Daniel Zilberman, AWS Sr. Specialist SA: dzilberm@amazon.com
