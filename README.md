@@ -57,6 +57,8 @@ Many enterprise applications, particularly legacy systems, have hardcoded IP add
 5. **OSPF Routing**: Provides routing protocol convergence between sites
 6. **Layer 2 Extension**: Allows VMs in the extended subnet to communicate seamlessly across sites
 
+
+
 ### Cost
 
 You are responsible for the cost of the AWS services used while running this Guidance. As of November 2024, the cost for running this Guidance with the default settings in the US East (N. Virginia) Region is approximately **$150-$200 per month** for a basic deployment with c5n.large instance type.
@@ -145,10 +147,10 @@ To request limit increases, visit the [AWS Service Quotas console](https://conso
 ### Supported Regions
 
 This Guidance supports all AWS Regions where Cisco Catalyst 8000V is available in AWS Marketplace. Tested regions include:
-- US East (N. Virginia) - us-east-1
-- US West (Oregon) - us-west-2
-- EU (Ireland) - eu-west-1
-- Asia Pacific (Singapore) - ap-southeast-1
+- US East (N. Virginia) - `us-east-1`
+- US West (Oregon) - `us-west-2`
+- EU (Ireland) - `eu-west-1`
+- Asia Pacific (Singapore) - `ap-southeast-1`
 
 ## Deployment Steps
 
@@ -263,6 +265,7 @@ Follow these steps to deploy the L2 Stretch Network solution:
      --query 'Stacks[0].Outputs[?OutputKey==`LispCloud8KvPrivateInterfaceId`].OutputValue' \
      --output text
    ```
+> NOTE: please see the [Implementation Guide](https://implementationguides.kits.eventoutfitters.aws.dev/l2-strnw-1030/cloud-foundations/l2-stretch-network-with-cisco-8000v.html) for detailed steps for deployment and validation of theis Guidance 
 
 ## Deployment Validation
 
