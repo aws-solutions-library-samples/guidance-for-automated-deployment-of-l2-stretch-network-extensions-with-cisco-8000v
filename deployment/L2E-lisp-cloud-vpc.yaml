@@ -1,5 +1,5 @@
 AWSTemplateFormatVersion: "2010-09-09"
-Description: "VPC template for simulated on-prem environment. "
+Description: "AWS cloud-side VPC and Cisco Catalyst 8000V deployment for L2 stretch network using LISP."
 Metadata:
   AWS::CloudFormation::Interface:
     ParameterGroups:
@@ -95,31 +95,31 @@ Parameters:
     Type: String
   LispCloud8KvInstanceType:
     AllowedValues:
-    - t3.medium
-    - c5.large
-    - c5.xlarge
-    - c5.2xlarge
-    - c5.4xlarge
-    - c5.9xlarge
-    - c5d.2xlarge
-    - c5n.large
-    - c5n.xlarge
-    - c5n.2xlarge
-    - c5n.4xlarge
-    - c5n.9xlarge
-    - c5n.18xlarge
-    - c6in.large
-    - c6in.2xlarge
-    - c6in.4xlarge
-    - c6in.8xlarge
+      - t3.medium
+      - c5.large
+      - c5.xlarge
+      - c5.2xlarge
+      - c5.4xlarge
+      - c5.9xlarge
+      - c5d.2xlarge
+      - c5n.large
+      - c5n.xlarge
+      - c5n.2xlarge
+      - c5n.4xlarge
+      - c5n.9xlarge
+      - c5n.18xlarge
+      - c6in.large
+      - c6in.2xlarge
+      - c6in.4xlarge
+      - c6in.8xlarge
     Default: c5n.large
-    Description: on-prem 8kv EC2 instance types.
+    Description: EC2 instance type for the Cisco 8000V router.
     Type: String
   LispCloud8KvVersion:
     AllowedValues:
-    - 8kv17908
-    - 8kv171301a
-    - 8kv171503a
+      - 8kv17908
+      - 8kv171301a
+      - 8kv171503a
     Default: 8kv171503a
     Description: Cisco 8000v software version (17.09.08, 17.13.01a, or 17.15.03a)
     Type: String
@@ -338,7 +338,7 @@ Resources:
     Properties:
       Path: /
       Roles:
-       - !Ref Ec2InstanceRole
+        - !Ref Ec2InstanceRole
 
   Ec2InstanceRole:
     Type: AWS::IAM::Role
@@ -401,8 +401,12 @@ Resources:
             Resource: '*'
           - Effect: Allow
             Action:
-              - cloudformation:*
-            Resource: '*'
+              - cloudformation:DescribeStacks
+              - cloudformation:DescribeStackResource
+              - cloudformation:DescribeStackResources
+              - cloudformation:DescribeStackEvents
+              - cloudformation:SignalResource
+            Resource: !Sub 'arn:${AWS::Partition}:cloudformation:${AWS::Region}:${AWS::AccountId}:stack/${AWS::StackName}/*'
       Roles:
         -
           !Ref Ec2InstanceRole
@@ -418,6 +422,50 @@ Resources:
       Tags:
         - Key: Name
           Value: !Sub 'Lisp Cloud VPC - ${AWS::StackName}'
+
+  LispCloudVpcFlowLogGroup:
+    Type: AWS::Logs::LogGroup
+    DeletionPolicy: Delete
+    UpdateReplacePolicy: Delete
+    Properties:
+      LogGroupName: !Sub '/${AWS::StackName}/vpc-flow-logs'
+      RetentionInDays: 14
+
+  LispCloudVpcFlowLogRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: vpc-flow-logs.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: VpcFlowLogPolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                  - logs:DescribeLogGroups
+                  - logs:DescribeLogStreams
+                Resource: !GetAtt LispCloudVpcFlowLogGroup.Arn
+
+  LispCloudVpcFlowLog:
+    Type: AWS::EC2::FlowLog
+    Properties:
+      DeliverLogsPermissionArn: !GetAtt LispCloudVpcFlowLogRole.Arn
+      LogGroupName: !Ref LispCloudVpcFlowLogGroup
+      ResourceId: !Ref LispCloudVpc
+      ResourceType: VPC
+      TrafficType: ALL
+      Tags:
+        - Key: Name
+          Value: !Sub '${AWS::StackName}-vpc-flow-log'
 
   LispCloudPrivateSubnet:
     Type: AWS::EC2::Subnet
@@ -450,7 +498,7 @@ Resources:
       MapPublicIpOnLaunch: false
       Tags:
         - Key: Name
-          Value:  "Lisp Cloud Public Subnet"
+          Value: "Lisp Cloud Public Subnet"
         - Key: SubnetType
           Value: Public
       VpcId: !Ref LispCloudVpc
@@ -530,79 +578,121 @@ Resources:
     Type: AWS::EC2::SecurityGroup
     Condition: ShouldDeployAppServer
     Properties:
-      GroupDescription: Security group for app server
-      GroupName: !Sub "${AWS::StackName}-Lisp Cloud App Server Security Group"
+      GroupDescription: Security group for app server - allows HTTP and ICMP from private RFC1918 ranges
       SecurityGroupIngress:
         - IpProtocol: tcp
           FromPort: 80
           ToPort: 80
           CidrIp: "10.0.0.0/8"
+          Description: Allow HTTP from 10.0.0.0/8 private range
         - IpProtocol: tcp
           FromPort: 80
           ToPort: 80
           CidrIp: "172.16.0.0/12"
+          Description: Allow HTTP from 172.16.0.0/12 private range
         - IpProtocol: tcp
           FromPort: 80
           ToPort: 80
           CidrIp: "192.168.0.0/16"
+          Description: Allow HTTP from 192.168.0.0/16 private range
         - IpProtocol: icmp
           CidrIp: 10.0.0.0/8
           FromPort: "-1"
           ToPort: "-1"
+          Description: Allow ICMP from 10.0.0.0/8 private range
         - IpProtocol: icmp
           CidrIp: 172.16.0.0/12
           FromPort: "-1"
           ToPort: "-1"
+          Description: Allow ICMP from 172.16.0.0/12 private range
         - IpProtocol: icmp
           CidrIp: 192.168.0.0/16
           FromPort: "-1"
-          ToPort: "-1"        
+          ToPort: "-1"
+          Description: Allow ICMP from 192.168.0.0/16 private range
+      SecurityGroupEgress:
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 0.0.0.0/0
+          Description: Allow outbound HTTP for package updates
+        - IpProtocol: tcp
+          FromPort: 443
+          ToPort: 443
+          CidrIp: 0.0.0.0/0
+          Description: Allow outbound HTTPS for package updates
+        - IpProtocol: icmp
+          FromPort: "-1"
+          ToPort: "-1"
+          CidrIp: 0.0.0.0/0
+          Description: Allow outbound ICMP for diagnostics
       VpcId: !Ref LispCloudVpc
 
   LispCloud8KvSecurityGroupPublic:
     Type: AWS::EC2::SecurityGroup
     Properties:
-      GroupDescription: Security group for Customer Gateway Server
-      GroupName: !Sub "${AWS::StackName}-Lisp Cloud 8Kv Public Security Group"
+      GroupDescription: Public security group for Cisco 8KV management and IPSec tunnel establishment
       SecurityGroupIngress:
         - IpProtocol: icmp
           CidrIp: !Ref ParticipantIPAddress
           FromPort: "-1"
           ToPort: "-1"
+          Description: Allow ICMP from participant IP for diagnostics
         - IpProtocol: tcp
           FromPort: 22
           ToPort: 22
           CidrIp: !Ref ParticipantIPAddress
+          Description: Allow SSH from participant IP for management
         - IpProtocol: tcp
           FromPort: 80
           ToPort: 80
           CidrIp: !Ref ParticipantIPAddress
+          Description: Allow HTTP from participant IP for management
         - IpProtocol: tcp
           FromPort: 443
           ToPort: 443
-          CidrIp: !Ref ParticipantIPAddress    
+          CidrIp: !Ref ParticipantIPAddress
+          Description: Allow HTTPS from participant IP for management
         - IpProtocol: udp
           FromPort: 500
           ToPort: 500
-          CidrIp: 0.0.0.0/0          
+          CidrIp: !Sub '${TunnelDestinationPublicIP}/32'
+          Description: Allow IKE (UDP 500) from on-premises router for IPSec tunnel
         - IpProtocol: udp
           FromPort: 4500
           ToPort: 4500
-          CidrIp: 0.0.0.0/0  
+          CidrIp: !Sub '${TunnelDestinationPublicIP}/32'
+          Description: Allow IPSec NAT-T (UDP 4500) from on-premises router
+      SecurityGroupEgress:
+        - IpProtocol: "-1"
+          CidrIp: 0.0.0.0/0
+          Description: Allow all outbound traffic for IPSec tunnel and management
       VpcId: !Ref LispCloudVpc
 
   LispCloud8KvSecurityGroupPrivate:
     Type: AWS::EC2::SecurityGroup
     Properties:
-      GroupDescription: Security group for Customer Gateway Server
-      GroupName: !Sub "${AWS::StackName}-Lisp Cloud 8Kv Private Security Group"
+      GroupDescription: Private security group for Cisco 8KV LISP Layer 2 extension interface
       SecurityGroupIngress:
         - IpProtocol: "-1"
           CidrIp: 10.0.0.0/8
+          Description: Allow all protocols from 10.0.0.0/8 for LISP L2 extension
         - IpProtocol: "-1"
           CidrIp: 172.16.0.0/12
+          Description: Allow all protocols from 172.16.0.0/12 for LISP L2 extension
         - IpProtocol: "-1"
           CidrIp: 192.168.0.0/16
+          Description: Allow all protocols from 192.168.0.0/16 for LISP L2 extension
+      SecurityGroupEgress:
+        - IpProtocol: "-1"
+          CidrIp: 10.0.0.0/8
+          Description: Allow all outbound to 10.0.0.0/8 for LISP L2 extension
+        - IpProtocol: "-1"
+          CidrIp: 172.16.0.0/12
+          Description: Allow all outbound to 172.16.0.0/12 for LISP L2 extension
+        - IpProtocol: "-1"
+          CidrIp: 192.168.0.0/16
+          Description: Allow all outbound to 192.168.0.0/16 for LISP L2 extension
       VpcId: !Ref LispCloudVpc
 
   LispCloud8KvPublicInterface:
@@ -796,7 +886,7 @@ Resources:
   LispCloudAppServer:
     Type: AWS::EC2::Instance
     Condition: ShouldDeployAppServer
-    DependsOn: 
+    DependsOn:
       - LispCloudPrivateRouteNat
     Properties:
       IamInstanceProfile: !Ref InstanceProfile
@@ -817,8 +907,6 @@ Resources:
       Tags:
         - Key: Name
           Value: !Sub "Lisp Cloud App Server - ${AWS::StackName}"
-
-
 
 Outputs:
   LispCloudVpc:
