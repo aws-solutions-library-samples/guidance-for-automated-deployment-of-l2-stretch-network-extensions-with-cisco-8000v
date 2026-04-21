@@ -1,4 +1,4 @@
-# Guidance for L2 Stretch Network with Cisco 8000v on AWS
+# Guidance for Automated Deployment of Layer 2 Stretch Network Extensions with Cisco 8000v on AWS
 
 ## Table of Contents
 
@@ -20,13 +20,13 @@
 
 ## Overview
 
-This Guidance enables enterprise customers to seamlessly extend on-premises network subnets to AWS using Cisco Catalyst 8000V routers and LISP (Locator/ID Separation Protocol) technology. It solves the critical problem of migrating legacy applications with hardcoded IP addresses to AWS without requiring complex IP reconfiguration.
+This guidance enables enterprise customers to seamlessly extend on-premises network subnets to AWS using Cisco Catalyst 8000V routers and LISP (Locator/ID Separation Protocol) technology. It solves the critical problem of migrating legacy applications with hardcoded IP addresses to AWS without requiring complex IP reconfiguration.
 
 **Why was this Guidance built?**
 
-Many enterprise applications, particularly legacy systems, have hardcoded IP addresses and complex network dependencies that make cloud migration challenging. Changing IP addresses during migration can lead to extended downtime, increased risks, and complex reconfiguration across interconnected systems. This Guidance provides a Layer 2 network extension solution that allows virtual machines to migrate to AWS while maintaining their original IP addresses, ensuring business continuity and reducing migration complexity.
+Many enterprise applications, particularly legacy systems, have hardcoded IP addresses and complex network dependencies that make cloud migration challenging. Changing IP addresses during migration can lead to extended downtime, increased risks, and complex reconfiguration across interconnected systems. This guidance provides a Layer 2 network extension solution that allows virtual machines to migrate to AWS while maintaining their original IP addresses, ensuring business continuity and reducing migration complexity.
 
-**Note:** This Guidance focuses on the AWS cloud-side infrastructure deployment. A companion CloudFormation template (`L2E-lisp-on-prem-vpc-v3.yaml`) is provided for lab testing purposes to simulate an on-premises environment within AWS, but production deployments would connect to actual on-premises Cisco routers.
+**Note:** This guidance focuses on the AWS cloud-side infrastructure deployment. A companion CloudFormation template (`L2E-lisp-on-prem-vpc-v3.yaml`) is provided for lab testing purposes to simulate an on-premises environment within AWS, but production deployments would connect to actual on-premises Cisco routers.
 
 ## Architecture
 
@@ -86,7 +86,7 @@ Many enterprise applications, particularly legacy systems, have hardcoded IP add
 
 ### Cost
 
-You are responsible for the cost of the AWS services used while running this Guidance. As of November 2024, the cost for running this Guidance with the default settings in the US East (N. Virginia) Region is approximately **$150-$200 per month** for a basic deployment with `c5n.large` instance type.
+You are responsible for the cost of the AWS services used while running this guidance. As of November 2024, the cost for running this guidance with the default settings in the US East (N. Virginia) Region is approximately **$150-$200 per month** for a basic deployment with `c5n.large` instance type.
 
 We recommend creating a [Budget](https://docs.aws.amazon.com/cost-management/latest/userguide/budgets-managing-costs.html) through [AWS Cost Explorer](https://aws.amazon.com/aws-cost-management/aws-cost-explorer/) to help manage costs. Prices are subject to change. For full details, refer to the pricing webpage for each AWS service used in this Guidance.
 
@@ -171,7 +171,7 @@ To request limit increases, visit the [AWS Service Quotas console](https://conso
 
 ### Supported Regions
 
-This Guidance supports all AWS Regions where Cisco Catalyst 8000V is available in AWS Marketplace. Tested regions include:
+This guidance supports all AWS Regions where Cisco Catalyst 8000V is available in AWS Marketplace. Tested regions include:
 - US East (N. Virginia) - `us-east-1`
 - US West (Oregon) - `us-west-2`
 - EU (Ireland) - `eu-west-1`
@@ -290,7 +290,7 @@ Follow these steps to deploy the L2 Stretch Network solution:
      --query 'Stacks[0].Outputs[?OutputKey==`LispCloud8KvPrivateInterfaceId`].OutputValue' \
      --output text
    ```
-> NOTE: please see the [Implementation Guide](https://implementationguides.kits.eventoutfitters.aws.dev/l2-strnw-1030/cloud-foundations/l2-stretch-network-with-cisco-8000v.html) for detailed steps for deployment and validation of theis Guidance 
+> NOTE: please see the [Implementation Guide](https://implementationguides.kits.eventoutfitters.aws.dev/l2-strnw-1030/cloud-foundations/l2-stretch-network-with-cisco-8000v.html) for detailed steps for deployment and validation of this guidance 
 
 ## Deployment Validation
 
@@ -768,7 +768,7 @@ aws cloudformation describe-stacks \
 - Each /28 IPv4 prefix provides 16 usable IP addresses for on-premises endpoint connectivity
 
 **Security Considerations:**
-- This Guidance creates public IP addresses for 8000V management
+- This guidance creates public IP addresses for 8000V management
 - IPSec tunnels are encrypted but validate pre-shared key security
 - Restrict management access to known IP addresses only
 - Regularly update Cisco IOS-XE software for security patches
@@ -779,7 +779,7 @@ aws cloudformation describe-stacks \
   - ~50 endpoints with secondary IPs only
   - Up to 464 endpoints with IPv4 prefixes (`c5n.4xlarge`)
 - **Supported Instance Types**: Cisco 8000V requires compute-optimized instances (c5/c5n/c6in family)
-- **IPv6**: This Guidance focuses on IPv4; IPv6 support requires additional LISP configuration
+- **IPv6**: This guidance focuses on IPv4; IPv6 support requires additional LISP configuration
 - **Multicast**: LISP-based L2E has limited multicast support (some multicast may not work)
 - **Broadcast**: Broadcast traffic is not forwarded across LISP tunnels by design
 - **On-Premises Requirement**: Requires compatible Cisco router with LISP and IPSec support on-premises
@@ -791,7 +791,7 @@ This project is licensed under the MIT-0 No attribution License. See the [LICENS
 
 ## Notices
 
-*Customers are responsible for making their own independent assessment of the information in this Guidance. This Guidance: (a) is for informational purposes only, (b) represents AWS current product offerings and practices, which are subject to change without notice, and (c) does not create any commitments or assurances from AWS and its affiliates, suppliers or licensors. AWS products or services are provided "as is" without warranties, representations, or conditions of any kind, whether express or implied. AWS responsibilities and liabilities to its customers are controlled by AWS agreements, and this Guidance is not part of, nor does it modify, any agreement between AWS and its customers.*
+*Customers are responsible for making their own independent assessment of the information in this guidance. This guidance: (a) is for informational purposes only, (b) represents AWS current product offerings and practices, which are subject to change without notice, and (c) does not create any commitments or assurances from AWS and its affiliates, suppliers or licensors. AWS products or services are provided "as is" without warranties, representations, or conditions of any kind, whether express or implied. AWS responsibilities and liabilities to its customers are controlled by AWS agreements, and this guidance is not part of, nor does it modify, any agreement between AWS and its customers.*
 
 ## Authors
 
