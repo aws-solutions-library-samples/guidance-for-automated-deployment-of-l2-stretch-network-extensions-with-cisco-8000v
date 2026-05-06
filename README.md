@@ -62,7 +62,7 @@ Many enterprise applications, particularly legacy systems, have hardcoded IP add
 
 **Detailed Reference Architecture**
 
-<img width="50%" height="50%" alt="image" src="assets/cisco-8000v-reference-architecture.png" />
+<img width="70%" height="70%" alt="Guidance Reference Architecture" src="assets/cisco-8000v-reference-architecture.png" />
 
 **Detailed Reference Architecture Flow**
 
@@ -105,7 +105,7 @@ The following table provides a sample cost breakdown for deploying this Guidance
 | **Total Estimated Cost** | | **~$138.13/month** |
 
 **Note:** Costs will vary based on:
-- Instance type selection (larger instances for higher throughput)
+- EC2 Instance type selection (larger instances for higher throughput)
 - Data transfer volumes
 - EC2/Compute Savings plans (recommended)
 - Cisco C8000v License cost (purchased directly with Cisco/Partner)
@@ -795,6 +795,6 @@ This project is licensed under the MIT-0 No attribution License. See the [LICENS
 
 ## Authors
 
-- Josh Leatham, AWS Sr. Partner Solutions Architect: jlleatha@amazon.com
-- Craig Herring, AWS Sr. Specialist SA: crherrin@amazon.com
-- Daniel Zilberman, AWS Sr. Specialist SA: dzilberm@amazon.com
+- [Josh Leatham, AWS Sr. Partner Solutions Architect](mailto:jlleatha@amazon.com)
+- [Craig Herring, AWS Sr. Specialist Solution Architect](mailto:crherrin@amazon.com)
+- [Daniel Zilberman, AWS Sr. Specialist Solution Architect](mailto:dzilberm@amazon.com)
