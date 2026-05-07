@@ -62,7 +62,7 @@ Many enterprise applications, particularly legacy systems, have hardcoded IP add
 
 **Detailed Reference Architecture**
 
-<img width="70%" height="70%" alt="Guidance Reference Architecture" src="assets/cisco-8000v-reference-architecture.png" />
+<img width="70%" height="70%" alt="Guidance Reference Architecture" src="assets/cisco-8000v-reference-architecture-new.jpg" />
 
 **Detailed Reference Architecture Flow**
 
@@ -86,7 +86,7 @@ Many enterprise applications, particularly legacy systems, have hardcoded IP add
 
 ### Cost
 
-You are responsible for the cost of the AWS services used while running this guidance. As of November 2024, the cost for running this guidance with the default settings in the US East (N. Virginia) Region is approximately **$150-$200 per month** for a basic deployment with `c5n.large` instance type.
+You are responsible for the cost of the AWS services used while running this guidance. As of November 2024, the cost for running this guidance with the default settings in the US East (N. Virginia) Region is approximately **$150-$200 per month** for a basic deployment with `c5n.large` instance type for Cisco 8000V.
 
 We recommend creating a [Budget](https://docs.aws.amazon.com/cost-management/latest/userguide/budgets-managing-costs.html) through [AWS Cost Explorer](https://aws.amazon.com/aws-cost-management/aws-cost-explorer/) to help manage costs. Prices are subject to change. For full details, refer to the pricing webpage for each AWS service used in this Guidance.
 
