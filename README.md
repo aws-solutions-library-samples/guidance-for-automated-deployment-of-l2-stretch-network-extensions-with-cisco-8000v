@@ -185,8 +185,9 @@ Follow these steps to deploy the L2 Stretch Network solution:
 
 1. **Clone the repository**
    ```bash
-   git clone https://github.com/your-org/lisp-l2e.git
-   cd lisp-l2e
+   git clone https://github.com/aws-solutions-library-samples/guidance-for-l2-stretch-network-with-cisco-8000v.git
+   #cd lisp-l2e
+   cd deployment
    ```
 
 2. **Configure AWS CLI profile**
@@ -234,15 +235,15 @@ Follow these steps to deploy the L2 Stretch Network solution:
 
 1. **Clone the repository**
    ```bash
-   git clone https://github.com/your-org/lisp-l2e.git
-   cd lisp-l2e
+   git https://github.com/aws-solutions-library-samples/guidance-for-l2-stretch-network-with-cisco-8000v.git
+   cd deployment
    ```
 
 2. **Deploy the CloudFormation stack**
    ```bash
    aws cloudformation create-stack \
      --stack-name lisp-cloud-extension \
-     --template-body file://L2E-lisp-cloud-vpc-v3.yaml \
+     --template-body file://L2E-lisp-cloud-vpc.yaml \
      --parameters \
        ParameterKey=LispCloudVpcCidr,ParameterValue=172.16.0.0/16 \
        ParameterKey=LispCloudPublicSubnetCidr,ParameterValue=172.16.0.0/24 \
@@ -272,13 +273,13 @@ Follow these steps to deploy the L2 Stretch Network solution:
 
 4. **Retrieve important outputs**
    ```bash
-   # Get 8KV public IP
+   # Get 8000v public IP address
    aws cloudformation describe-stacks \
      --stack-name lisp-cloud-extension \
      --query 'Stacks[0].Outputs[?OutputKey==`LispCloud8KvPublicIp`].OutputValue' \
      --output text
    
-   # Get 8KV instance ID
+   # Get 8000v instance ID
    aws cloudformation describe-stacks \
      --stack-name lisp-cloud-extension \
      --query 'Stacks[0].Outputs[?OutputKey==`C8KVInstanceId`].OutputValue' \
