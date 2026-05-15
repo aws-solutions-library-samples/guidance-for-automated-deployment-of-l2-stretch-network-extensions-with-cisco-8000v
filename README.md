@@ -291,7 +291,7 @@ Follow these steps to deploy the L2 Stretch Network solution:
      --query 'Stacks[0].Outputs[?OutputKey==`LispCloud8KvPrivateInterfaceId`].OutputValue' \
      --output text
    ```
-> NOTE: please see the [Implementation Guide](https://implementationguides.kits.eventoutfitters.aws.dev/l2-strnw-1030/cloud-foundations/l2-stretch-network-with-cisco-8000v.html) for detailed steps for deployment and validation of this guidance 
+> NOTE: please see the [Implementation Guide](https://github.com/aws-solutions-library-samples/guidance-for-l2-stretch-network-with-cisco-8000v/edit/main/README.md) for detailed steps for deployment and validation of this guidance 
 
 ## Deployment Validation
 
@@ -796,6 +796,6 @@ This project is licensed under the MIT-0 No attribution License. See the [LICENS
 
 ## Authors
 
-- [Josh Leatham, AWS Sr. Partner Solutions Architect](mailto:jlleatha@amazon.com)
-- [Craig Herring, AWS Sr. Specialist Solution Architect](mailto:crherrin@amazon.com)
-- [Daniel Zilberman, AWS Sr. Specialist Solution Architect](mailto:dzilberm@amazon.com)
+- [Josh Leatham, AWS Sr. Partner Solutions Architect](https://www.linkedin.com/in/josh-leatham/)
+- [Craig Herring, AWS Sr. Specialist Solution Architect](https://www.linkedin.com/in/craigeherring/)
+- [Daniel Zilberman, AWS Sr. Specialist Solution Architect](https://www.linkedin.com/in/danzilberman/)
