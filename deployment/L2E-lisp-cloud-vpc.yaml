@@ -129,7 +129,6 @@ Parameters:
     Description: 'What is your external IP address in the format x.x.x.x/32? This entry will be added to certain Security Groups. Find your IP at https://checkip.amazonaws.com/'
     AllowedPattern: "^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])(\\/(32))$"
     ConstraintDescription: must be a valid IP address of the form x.x.x.x/32.
-    Default: '1.2.3.4/32'
   Hostname:
     Description: Specify the hostname of the 8Kv router
     Type: String
@@ -143,7 +142,6 @@ Parameters:
   KeyName:
     Description: Must be a valid SSH key name or left blank if using UsernamePassword.
     Type: String
-    Default: 'MyKeyPairName'
   Username:
     Description: Specify the username (required if AuthenticationType is UsernamePassword)
     Type: String
@@ -162,7 +160,6 @@ Parameters:
   TunnelDestinationPublicIP:
     Description: Public IP address of the on-prem Lisp Router
     Type: String
-    Default: '12.34.56.78'
   LispOnPremLoopback:
     Description: Loopback address of on-prem Lisp Router
     Type: String
@@ -578,38 +575,18 @@ Resources:
     Type: AWS::EC2::SecurityGroup
     Condition: ShouldDeployAppServer
     Properties:
-      GroupDescription: Security group for app server - allows HTTP and ICMP from private RFC1918 ranges
+      GroupDescription: Security group for app server - allows HTTP and ICMP from the LISP-stretched private subnet only
       SecurityGroupIngress:
         - IpProtocol: tcp
           FromPort: 80
           ToPort: 80
-          CidrIp: "10.0.0.0/8"
-          Description: Allow HTTP from 10.0.0.0/8 private range
-        - IpProtocol: tcp
-          FromPort: 80
-          ToPort: 80
-          CidrIp: "172.16.0.0/12"
-          Description: Allow HTTP from 172.16.0.0/12 private range
-        - IpProtocol: tcp
-          FromPort: 80
-          ToPort: 80
-          CidrIp: "192.168.0.0/16"
-          Description: Allow HTTP from 192.168.0.0/16 private range
+          CidrIp: !Ref LispCloudPrivateSubnetCidr
+          Description: Allow HTTP from the LISP-stretched private subnet
         - IpProtocol: icmp
-          CidrIp: 10.0.0.0/8
+          CidrIp: !Ref LispCloudPrivateSubnetCidr
           FromPort: "-1"
           ToPort: "-1"
-          Description: Allow ICMP from 10.0.0.0/8 private range
-        - IpProtocol: icmp
-          CidrIp: 172.16.0.0/12
-          FromPort: "-1"
-          ToPort: "-1"
-          Description: Allow ICMP from 172.16.0.0/12 private range
-        - IpProtocol: icmp
-          CidrIp: 192.168.0.0/16
-          FromPort: "-1"
-          ToPort: "-1"
-          Description: Allow ICMP from 192.168.0.0/16 private range
+          Description: Allow ICMP from the LISP-stretched private subnet
       SecurityGroupEgress:
         - IpProtocol: tcp
           FromPort: 80

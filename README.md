@@ -116,17 +116,12 @@ The following table provides a sample cost breakdown for deploying this Guidance
 
 ### Operating System
 
-These deployment instructions are optimized to work on **macOS, Linux, or Windows** with AWS CLI installed. The CloudFormation templates can be deployed from any operating system with AWS CLI access.
+These deployment instructions work on **macOS, Linux, or Windows**. The CloudFormation template can be deployed entirely from the AWS Management Console (a web browser is the only requirement) or from a terminal using the AWS CLI.
 
 **Required Tools:**
 
-```bash
-# AWS CLI (version 2.x recommended)
-aws --version
-
-# Optional: TaskCat for automated testing
-pip install taskcat
-```
+- A web browser with access to the AWS Management Console (Option 1).
+- AWS CLI v2.x — only required for the CLI-based deployment (Option 2). Verify with `aws --version`.
 
 ### Third-party tools
 
@@ -181,60 +176,96 @@ This Guidance includes AMI mappings for **32 AWS Regions**, including commercial
 
 Follow these steps to deploy the L2 Stretch Network solution:
 
-### Option 1: Automated Deployment with TaskCat (Recommended)
+### Option 1: Deploy via the AWS CloudFormation Console (Recommended)
+
+This option uses only a web browser — no CLI, scripts, or local tooling required.
+
+1. **Download the CloudFormation template**
+
+   Either clone the repository:
+   ```bash
+   git clone https://github.com/jleatham/guidance-for-l2-stretch-network-with-cisco-8000v.git
+   ```
+   Or download `deployment/L2E-lisp-cloud-vpc.yaml` directly from the repository's GitHub page (open the file, click **Raw**, then **Save Page As**).
+
+2. **Open the CloudFormation console**
+
+   Sign in to the AWS Management Console, switch to your target Region (must be one of the [supported Regions](#supported-regions)), and open the [CloudFormation console](https://console.aws.amazon.com/cloudformation/).
+
+3. **Create a new stack**
+
+   1. Choose **Create stack** → **With new resources (standard)**.
+   2. Under **Specify template**, select **Upload a template file**, click **Choose file**, and select the `L2E-lisp-cloud-vpc.yaml` file you downloaded in Step 1.
+   3. Choose **Next**.
+
+4. **Specify stack details**
+
+   Enter a stack name (for example, `lisp-cloud-extension`), then fill in the parameters. Parameters are grouped on the form to match the template's `ParameterGroups`.
+
+   **Network Configuration**
+   | Parameter | Required? | Guidance |
+   |---|---|---|
+   | `LispCloudVpcCidr` | Optional | VPC CIDR for the AWS side. Default `172.16.0.0/16`. Must be a superset of the stretched subnet and must not overlap any existing on-prem or AWS network. |
+   | `LispCloudPublicSubnetCidr` | Optional | Public subnet for the 8000V's external interface. Default `172.16.0.0/24`. Must be inside the VPC CIDR. |
+   | `LispCloudPrivateSubnetCidr` | Optional | The subnet that is stretched between on-prem and AWS. Default `172.16.1.0/24`. Must match the on-prem subnet you intend to extend. |
+   | `LispCloud8KvPrivateInterfaceIP` | Optional | Specific IP for the 8000V private interface. Leave blank for automatic assignment. |
+
+   **8Kv Instance Configuration**
+   | Parameter | Required? | Guidance |
+   |---|---|---|
+   | `LispCloud8KvInstanceType` | Required | EC2 instance type. Default `c5n.large`. Use larger c5n/c6in instances for higher throughput. |
+   | `LispCloud8KvVersion` | Required | Cisco IOS-XE version. Default `8kv171503a`. Note: `8kv171301a` is not available in `ap-east-2`, `mx-central-1`, `ap-southeast-5`, or `ap-southeast-7`. |
+   | `Hostname` | **Required** | Hostname applied to the Cisco 8000V (e.g., `lisp-cloud-router`). |
+   | `AuthenticationType` | Required | `KeyPair` (default, recommended) or `UsernamePassword`. |
+   | `KeyName` | **Required if `AuthenticationType` = KeyPair** | Name of an existing EC2 key pair in this Region. Create one in the EC2 console first if needed. |
+   | `Username` | Required if `AuthenticationType` = UsernamePassword | Admin username for the router. |
+   | `PrivilegePwd` | Required if `AuthenticationType` = UsernamePassword | Admin password (NoEcho — not displayed in the console or stored in the events log). |
+
+   **LISP Configuration**
+   | Parameter | Required? | Guidance |
+   |---|---|---|
+   | `LispCloudLoopback` | Optional | RLOC for the AWS 8000V. Default `33.33.33.33`. Used only inside the IPSec tunnel; do not pick a value that conflicts with addresses you actually route. |
+   | `LispOnPremLoopback` | Optional | RLOC for the on-prem 8000V. Default `11.11.11.11`. Same constraint as above and must match the on-prem router's loopback. |
+
+   **IPSec Configuration**
+   | Parameter | Required? | Guidance |
+   |---|---|---|
+   | `IPSecPreShareKey` | **Required** | Pre-shared key for the IPSec/LISP tunnel (NoEcho). The on-prem router must use the same value. |
+   | `TunnelDestinationPublicIP` | **Required** | Public IP of your on-prem Cisco router (the IPSec peer). Must be a single IP, not a CIDR. |
+
+   **Security Configuration**
+   | Parameter | Required? | Guidance |
+   |---|---|---|
+   | `ParticipantIPAddress` | **Required** | Your administrative IP in `x.x.x.x/32` form. Used to scope the public security group rules for SSH, HTTPS, and ICMP. Find your IP at <https://checkip.amazonaws.com/>. |
+
+   **Application Server Configuration**
+   | Parameter | Required? | Guidance |
+   |---|---|---|
+   | `DeployAppServer` | Optional | `Yes` (default) deploys a small `t3.micro` test web server in the stretched subnet. `No` skips it. |
+
+   Choose **Next**.
+
+5. **Configure stack options**
+
+   Defaults are fine for most deployments. Optionally add tags. Choose **Next**.
+
+6. **Review and create the stack**
+
+   Review the parameters, scroll to the bottom, **acknowledge** that CloudFormation will create IAM resources, and choose **Submit**.
+
+7. **Monitor stack creation**
+
+   Stack creation typically completes in 5–10 minutes. Watch the **Events** tab; the stack should reach `CREATE_COMPLETE`.
+
+8. **Retrieve stack outputs**
+
+   Open the **Outputs** tab. Note the values for `LispCloud8KvPublicIp`, `C8KVInstanceId`, `LispCloud8KvPrivateInterfaceId`, and (if deployed) `LispCloudAppServerPrivateIp` — you will need them to configure the on-prem side and to validate the deployment.
+
+### Option 2: Deploy via AWS CLI
 
 1. **Clone the repository**
    ```bash
-   git clone https://github.com/aws-solutions-library-samples/guidance-for-l2-stretch-network-with-cisco-8000v.git
-   cd guidance-for-l2-stretch-network-with-cisco-8000v
-   ```
-
-2. **Configure AWS CLI profile**
-   ```bash
-   # Verify AWS credentials
-   aws sts get-caller-identity --profile <YOUR-PROFILE>
-   ```
-
-3. **Install TaskCat**
-   ```bash
-   pip install taskcat
-   ```
-
-4. **Edit TaskCat configuration**
-   ```bash
-   # Edit .taskcat.yml with your parameters
-   vim .taskcat.yml
-   ```
-   
-   Update the following parameters:
-   - `KeyName`: Your EC2 key pair name
-   - `ParticipantIPAddress`: Your public IP address in CIDR format
-   - `TunnelDestinationPublicIP`: On-premises public IP (if known)
-
-5. **Run TaskCat deployment**
-   ```bash
-   taskcat test run
-   ```
-
-6. **Monitor deployment**
-   TaskCat will create the stack and monitor progress. View the HTML report:
-   ```bash
-   open taskcat_outputs/index.html
-   ```
-
-7. **Retrieve stack outputs**
-   ```bash
-   aws cloudformation describe-stacks \
-     --stack-name tCaT-lisp-l2e-deployment-lisp-cloud-deployment \
-     --query 'Stacks[0].Outputs' \
-     --output table
-   ```
-
-### Option 2: Manual CloudFormation Deployment
-
-1. **Clone the repository**
-   ```bash
-   git clone https://github.com/aws-solutions-library-samples/guidance-for-l2-stretch-network-with-cisco-8000v.git
+   git clone https://github.com/jleatham/guidance-for-l2-stretch-network-with-cisco-8000v.git
    cd guidance-for-l2-stretch-network-with-cisco-8000v
    ```
 
