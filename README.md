@@ -24,13 +24,14 @@ This guidance enables enterprise customers to seamlessly extend on-premises netw
 
 **Why was this Guidance built?**
 
-Many enterprise applications, particularly legacy systems, have hardcoded IP addresses and complex network dependencies that make cloud migration challenging. Changing IP addresses during migration can lead to extended downtime, increased risks, and complex reconfiguration across interconnected systems. This guidance provides a Layer 2 network extension solution that allows virtual machines to migrate to AWS while maintaining their original IP addresses, ensuring business continuity and reducing migration complexity.
+Many enterprise applications, particularly legacy systems and workloads running in on-premises virtualized environments, have hardcoded IP addresses and complex network dependencies that make cloud migration challenging. Customers migrating from platforms such as VMware vSphere often face this problem at scale. Changing IP addresses during migration can lead to extended downtime, increased risks, and complex reconfiguration across interconnected systems. This Guidance provides a Layer 2 network extension solution that allows virtual machines to migrate to AWS while maintaining their original IP addresses, ensuring business continuity and reducing migration complexity.
+
 
 **Note:** This guidance focuses on the AWS cloud-side infrastructure deployment. A companion CloudFormation template (`L2E-lisp-on-prem-vpc-v3.yaml`) is provided for lab testing purposes to simulate an on-premises environment within AWS, but production deployments would connect to actual on-premises Cisco routers.
 
 ## Architecture
 
-**Hgh Level Architecture Overview:**
+**High Level Architecture Overview:**
 
 ```
 ┌──────────────────────┐    IPSec/LISP Tunnel      ┌─────────────────────┐
@@ -86,7 +87,7 @@ Many enterprise applications, particularly legacy systems, have hardcoded IP add
 
 ### Cost
 
-You are responsible for the cost of the AWS services used while running this guidance. As of November 2024, the cost for running this guidance with the default settings in the US East (N. Virginia) Region is approximately **$150-$200 per month** for a basic deployment with `c5n.large` instance type for Cisco 8000V.
+You are responsible for the cost of the AWS services used while running this Guidance. As of November 2024, the cost for running this Guidance with the default settings in the US East (N. Virginia) Region is approximately **$140-$200 per month** for a basic deployment with `c5n.large` instance type, depending on data transfer volumes and optional resource selections.
 
 We recommend creating a [Budget](https://docs.aws.amazon.com/cost-management/latest/userguide/budgets-managing-costs.html) through [AWS Cost Explorer](https://aws.amazon.com/aws-cost-management/aws-cost-explorer/) to help manage costs. Prices are subject to change. For full details, refer to the pricing webpage for each AWS service used in this Guidance.
 
@@ -101,8 +102,9 @@ The following table provides a sample cost breakdown for deploying this Guidance
 | Elastic IP Address | 1 EIP attached to 8000V, 730 hours/month | $3.65/month |
 | NAT Gateway | 1 NAT Gateway, 100 GB processed | $37.35/month |
 | VPC | Standard VPC, subnet, routing | $0.00 |
+| CloudWatch Logs (VPC Flow Logs) | ~10 GB ingested/month | $5.00/month |
 | Data Transfer | 100 GB out to Internet | $9.00/month |
-| **Total Estimated Cost** | | **~$138.13/month** |
+| **Total Estimated Cost** | | **~$140-$200/month** |
 
 **Note:** Costs will vary based on:
 - EC2 Instance type selection (larger instances for higher throughput)
@@ -129,9 +131,9 @@ pip install taskcat
 ### Third-party tools
 
 **Cisco Catalyst 8000V License**
-- BYOL (Bring Your Own License) required for production use
-- Rate limited evaluation license included for testing
-- Subscribe to Cisco Catalyst 8000V in AWS Marketplace before deployment
+- The BYOL Marketplace AMI includes a rate-limited perpetual license suitable for evaluation and testing
+- A license purchased directly from Cisco is required for production throughput and Cisco TAC support
+- Subscribe to [Cisco Catalyst 8000V](https://aws.amazon.com/marketplace/pp/prodview-gvkcuwm3c6dru) in AWS Marketplace before deployment
 
 ### AWS account requirements
 
@@ -171,11 +173,9 @@ To request limit increases, visit the [AWS Service Quotas console](https://conso
 
 ### Supported Regions
 
-This guidance supports all AWS Regions where Cisco Catalyst 8000V is available in AWS Marketplace. Tested regions include:
-- US East (N. Virginia) - `us-east-1`
-- US West (Oregon) - `us-west-2`
-- EU (Ireland) - `eu-west-1`
-- Asia Pacific (Singapore) - `ap-southeast-1`
+This Guidance includes AMI mappings for **32 AWS Regions**, including commercial, GovCloud, and newer regions. The CloudFormation template will deploy in any region listed in the AMI mappings section of the template.
+
+**Note:** IOS-XE version 17.13.01a is not available in all regions (`ap-east-2`, `mx-central-1`, `ap-southeast-5`, `ap-southeast-7`). Use version 17.15.03a (default) or 17.09.08 in those regions.
 
 ## Deployment Steps
 
@@ -186,8 +186,7 @@ Follow these steps to deploy the L2 Stretch Network solution:
 1. **Clone the repository**
    ```bash
    git clone https://github.com/aws-solutions-library-samples/guidance-for-l2-stretch-network-with-cisco-8000v.git
-   #cd lisp-l2e
-   cd deployment
+   cd guidance-for-l2-stretch-network-with-cisco-8000v
    ```
 
 2. **Configure AWS CLI profile**
@@ -235,15 +234,15 @@ Follow these steps to deploy the L2 Stretch Network solution:
 
 1. **Clone the repository**
    ```bash
-   git https://github.com/aws-solutions-library-samples/guidance-for-l2-stretch-network-with-cisco-8000v.git
-   cd deployment
+   git clone https://github.com/aws-solutions-library-samples/guidance-for-l2-stretch-network-with-cisco-8000v.git
+   cd guidance-for-l2-stretch-network-with-cisco-8000v
    ```
 
 2. **Deploy the CloudFormation stack**
    ```bash
    aws cloudformation create-stack \
      --stack-name lisp-cloud-extension \
-     --template-body file://L2E-lisp-cloud-vpc.yaml \
+     --template-body file://deployment/L2E-lisp-cloud-vpc.yaml \
      --parameters \
        ParameterKey=LispCloudVpcCidr,ParameterValue=172.16.0.0/16 \
        ParameterKey=LispCloudPublicSubnetCidr,ParameterValue=172.16.0.0/24 \
@@ -255,10 +254,10 @@ Follow these steps to deploy the L2 Stretch Network solution:
        ParameterKey=AuthenticationType,ParameterValue=KeyPair \
        ParameterKey=KeyName,ParameterValue=your-key-name \
        ParameterKey=Username,ParameterValue=admin \
-       ParameterKey=PrivilegePwd,ParameterValue=YourPassword123 \
+       ParameterKey=PrivilegePwd,ParameterValue=<YOUR-PASSWORD> \
        ParameterKey=LispCloudLoopback,ParameterValue=33.33.33.33 \
        ParameterKey=LispOnPremLoopback,ParameterValue=11.11.11.11 \
-       ParameterKey=IPSecPreShareKey,ParameterValue=YourSecretKey \
+       ParameterKey=IPSecPreShareKey,ParameterValue=<YOUR-IPSEC-PRESHARED-KEY> \
        ParameterKey=TunnelDestinationPublicIP,ParameterValue=12.34.56.78 \
      --capabilities CAPABILITY_IAM \
      --profile <YOUR-PROFILE>
@@ -648,7 +647,7 @@ Enhance your deployment with these recommendations:
 
 ### 2. Monitoring and Logging
 
-- Enable VPC Flow Logs for traffic analysis
+- VPC Flow Logs are enabled by default, delivering to a CloudWatch Logs group with 14-day retention
 - Configure CloudWatch alarms for:
   - EC2 instance health
   - Network throughput
@@ -657,10 +656,12 @@ Enhance your deployment with these recommendations:
 
 ### 3. Security Enhancements
 
-- Restrict security group rules to minimum required ports
-- Implement AWS WAF for application layer protection
-- Enable AWS GuardDuty for threat detection
-- Use AWS Secrets Manager for credential management
+- Security groups include explicit egress rules and descriptions on all rules
+- IPSec ports (UDP 500/4500) are restricted to the on-premises tunnel source IP
+- IAM policy is scoped to specific CloudFormation read and SSM actions
+- Consider implementing AWS WAF for application layer protection
+- Consider enabling AWS GuardDuty for threat detection
+- Consider using AWS Secrets Manager for credential management
 
 ### 4. Performance Optimization
 
@@ -771,7 +772,11 @@ aws cloudformation describe-stacks \
 **Security Considerations:**
 - This guidance creates public IP addresses for 8000V management
 - IPSec tunnels are encrypted but validate pre-shared key security
-- Restrict management access to known IP addresses only
+- Management access (SSH, HTTP, HTTPS, ICMP) is restricted to the participant IP address
+- IPSec ports (UDP 500/4500) are restricted to the on-premises tunnel destination IP
+- All security groups define explicit egress rules; the app server egress is limited to HTTP/HTTPS/ICMP
+- VPC Flow Logs are enabled for network traffic visibility and auditing
+- Source/Destination Check is disabled on both Cisco 8000V network interfaces — this is required for the router to forward traffic not addressed to itself (standard for virtual router appliances on AWS)
 - Regularly update Cisco IOS-XE software for security patches
 
 ### Limitations
@@ -779,10 +784,12 @@ aws cloudformation describe-stacks \
 - **Maximum Endpoints per 8000V Instance**: Limited by ENI IP capacity:
   - ~50 endpoints with secondary IPs only
   - Up to 464 endpoints with IPv4 prefixes (`c5n.4xlarge`)
-- **Supported Instance Types**: Cisco 8000V requires compute-optimized instances (c5/c5n/c6in family)
-- **IPv6**: This guidance focuses on IPv4; IPv6 support requires additional LISP configuration
+- **Supported Instance Types**: Tested with c5, c5n, and c6in instance families (t3.medium also permitted for minimal testing)
+- **IPv6**: This Guidance focuses on IPv4; IPv6 support requires additional LISP configuration
 - **Multicast**: LISP-based L2E has limited multicast support (some multicast may not work)
 - **Broadcast**: Broadcast traffic is not forwarded across LISP tunnels by design
+- **Tunnel Overlay Subnet**: The IPSec tunnel interface uses `12.0.0.0/24` (cloud: `12.0.0.2`, on-prem: `12.0.0.1`). This address range is only used inside the encrypted tunnel and is not advertised externally, but avoid using this range elsewhere in your routing if possible. This is not configurable via CloudFormation parameters.
+- **LISP Loopback Addresses**: The default loopback IPs (`33.33.33.33` and `11.11.11.11`) are used as LISP routing locators (RLOCs) and are only reachable over the IPSec tunnel — they are not routed on the public internet.
 - **On-Premises Requirement**: Requires compatible Cisco router with LISP and IPSec support on-premises
 
 For any feedback, questions, or suggestions, please use the issues tab under this repo.
