@@ -1,4 +1,4 @@
-# Guidance for L2 Stretch Network with Cisco 8000v on AWS
+# Guidance for Automated Deployment of Layer 2 Stretch Network Extensions with Cisco 8000v on AWS
 
 ## Table of Contents
 
@@ -20,13 +20,14 @@
 
 ## Overview
 
-This Guidance enables enterprise customers to seamlessly extend on-premises network subnets to AWS using Cisco Catalyst 8000V routers and LISP (Locator/ID Separation Protocol) technology. It solves the critical problem of migrating legacy applications with hardcoded IP addresses to AWS without requiring complex IP reconfiguration.
+This guidance enables enterprise customers to seamlessly extend on-premises network subnets to AWS using Cisco Catalyst 8000V routers and LISP (Locator/ID Separation Protocol) technology. It solves the critical problem of migrating legacy applications with hardcoded IP addresses to AWS without requiring complex IP reconfiguration.
 
 **Why was this Guidance built?**
 
 Many enterprise applications, particularly legacy systems and workloads running in on-premises virtualized environments, have hardcoded IP addresses and complex network dependencies that make cloud migration challenging. Customers migrating from platforms such as VMware vSphere often face this problem at scale. Changing IP addresses during migration can lead to extended downtime, increased risks, and complex reconfiguration across interconnected systems. This Guidance provides a Layer 2 network extension solution that allows virtual machines to migrate to AWS while maintaining their original IP addresses, ensuring business continuity and reducing migration complexity.
 
-**Note:** This Guidance focuses on the AWS cloud-side infrastructure deployment. A companion CloudFormation template (`L2E-lisp-on-prem-vpc-v3.yaml`) is provided for lab testing purposes to simulate an on-premises environment within AWS, but production deployments would connect to actual on-premises Cisco routers.
+
+**Note:** This guidance focuses on the AWS cloud-side infrastructure deployment. A companion CloudFormation template (`L2E-lisp-on-prem-vpc-v3.yaml`) is provided for lab testing purposes to simulate an on-premises environment within AWS, but production deployments would connect to actual on-premises Cisco routers.
 
 ## Architecture
 
@@ -62,7 +63,7 @@ Many enterprise applications, particularly legacy systems and workloads running 
 
 **Detailed Reference Architecture**
 
-<img width="50%" height="50%" alt="image" src="assets/cisco-8000v-reference-architecture.png" />
+<img width="70%" height="70%" alt="Guidance Reference Architecture" src="assets/cisco-8000v-reference-architecture-new.jpg" />
 
 **Detailed Reference Architecture Flow**
 
@@ -106,7 +107,7 @@ The following table provides a sample cost breakdown for deploying this Guidance
 | **Total Estimated Cost** | | **~$140-$200/month** |
 
 **Note:** Costs will vary based on:
-- Instance type selection (larger instances for higher throughput)
+- EC2 Instance type selection (larger instances for higher throughput)
 - Data transfer volumes
 - EC2/Compute Savings plans (recommended)
 - Cisco C8000v License cost (purchased directly with Cisco/Partner)
@@ -271,13 +272,13 @@ Follow these steps to deploy the L2 Stretch Network solution:
 
 4. **Retrieve important outputs**
    ```bash
-   # Get 8KV public IP
+   # Get 8000v public IP address
    aws cloudformation describe-stacks \
      --stack-name lisp-cloud-extension \
      --query 'Stacks[0].Outputs[?OutputKey==`LispCloud8KvPublicIp`].OutputValue' \
      --output text
    
-   # Get 8KV instance ID
+   # Get 8000v instance ID
    aws cloudformation describe-stacks \
      --stack-name lisp-cloud-extension \
      --query 'Stacks[0].Outputs[?OutputKey==`C8KVInstanceId`].OutputValue' \
@@ -289,7 +290,7 @@ Follow these steps to deploy the L2 Stretch Network solution:
      --query 'Stacks[0].Outputs[?OutputKey==`LispCloud8KvPrivateInterfaceId`].OutputValue' \
      --output text
    ```
-> NOTE: please see the [Implementation Guide](https://implementationguides.kits.eventoutfitters.aws.dev/l2-strnw-1030/cloud-foundations/l2-stretch-network-with-cisco-8000v.html) for detailed steps for deployment and validation of this Guidance 
+> NOTE: please see the [Implementation Guide](https://github.com/aws-solutions-library-samples/guidance-for-l2-stretch-network-with-cisco-8000v/edit/main/README.md) for detailed steps for deployment and validation of this guidance 
 
 ## Deployment Validation
 
@@ -769,7 +770,7 @@ aws cloudformation describe-stacks \
 - Each /28 IPv4 prefix provides 16 usable IP addresses for on-premises endpoint connectivity
 
 **Security Considerations:**
-- This Guidance creates public IP addresses for 8000V management
+- This guidance creates public IP addresses for 8000V management
 - IPSec tunnels are encrypted but validate pre-shared key security
 - Management access (SSH, HTTP, HTTPS, ICMP) is restricted to the participant IP address
 - IPSec ports (UDP 500/4500) are restricted to the on-premises tunnel destination IP
@@ -798,10 +799,10 @@ This project is licensed under the MIT-0 No attribution License. See the [LICENS
 
 ## Notices
 
-*Customers are responsible for making their own independent assessment of the information in this Guidance. This Guidance: (a) is for informational purposes only, (b) represents AWS current product offerings and practices, which are subject to change without notice, and (c) does not create any commitments or assurances from AWS and its affiliates, suppliers or licensors. AWS products or services are provided "as is" without warranties, representations, or conditions of any kind, whether express or implied. AWS responsibilities and liabilities to its customers are controlled by AWS agreements, and this Guidance is not part of, nor does it modify, any agreement between AWS and its customers.*
+*Customers are responsible for making their own independent assessment of the information in this guidance. This guidance: (a) is for informational purposes only, (b) represents AWS current product offerings and practices, which are subject to change without notice, and (c) does not create any commitments or assurances from AWS and its affiliates, suppliers or licensors. AWS products or services are provided "as is" without warranties, representations, or conditions of any kind, whether express or implied. AWS responsibilities and liabilities to its customers are controlled by AWS agreements, and this guidance is not part of, nor does it modify, any agreement between AWS and its customers.*
 
 ## Authors
 
-- Josh Leatham, AWS Sr. Partner Solutions Architect: jlleatha@amazon.com
-- Craig Herring, AWS Sr. Specialist SA: crherrin@amazon.com
-- Daniel Zilberman, AWS Sr. Specialist SA: dzilberm@amazon.com
+- [Josh Leatham, AWS Sr. Partner Solutions Architect](https://www.linkedin.com/in/josh-leatham/)
+- [Craig Herring, AWS Sr. Specialist Solution Architect](https://www.linkedin.com/in/craigeherring/)
+- [Daniel Zilberman, AWS Sr. Specialist Solution Architect](https://www.linkedin.com/in/danzilberman/)
