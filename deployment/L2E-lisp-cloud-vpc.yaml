@@ -1,5 +1,5 @@
 AWSTemplateFormatVersion: "2010-09-09"
-Description: "AWS cloud-side VPC and Cisco Catalyst 8000V deployment for L2 stretch network using LISP."
+Description: "(SO9690) - AWS cloud-side VPC and Cisco Catalyst 8000V deployment for L2 stretch network using LISP."
 Metadata:
   AWS::CloudFormation::Interface:
     ParameterGroups:
