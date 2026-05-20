@@ -186,7 +186,7 @@ This option uses only a web browser — no CLI, scripts, or local tooling requir
    ```bash
    git clone https://github.com/jleatham/guidance-for-l2-stretch-network-with-cisco-8000v.git
    ```
-   Or download `deployment/L2E-lisp-cloud-vpc.yaml` directly from the repository's GitHub page (open the file, click **Raw**, then **Save Page As**).
+   Or download `deployment/L2E-lisp-cloud-vpc.yaml` directly from the repository's GitHub [page](https://github.com/aws-solutions-library-samples/guidance-for-l2-stretch-network-with-cisco-8000v/blob/main/deployment/L2E-lisp-cloud-vpc.yaml) 
 
 2. **Open the CloudFormation console**
 
@@ -194,9 +194,9 @@ This option uses only a web browser — no CLI, scripts, or local tooling requir
 
 3. **Create a new stack**
 
-   1. Choose **Create stack** → **With new resources (standard)**.
-   2. Under **Specify template**, select **Upload a template file**, click **Choose file**, and select the `L2E-lisp-cloud-vpc.yaml` file you downloaded in Step 1.
-   3. Choose **Next**.
+ - Choose **Create stack** → **With new resources (standard)**.
+ - Under **Specify template**, select **Upload a template file**, click **Choose file**, and select the `L2E-lisp-cloud-vpc.yaml` file you downloaded in Step 1.
+ - Choose **Next**.
 
 4. **Specify stack details**
 
@@ -251,7 +251,7 @@ This option uses only a web browser — no CLI, scripts, or local tooling requir
 
 6. **Review and create the stack**
 
-   Review the parameters, scroll to the bottom, **acknowledge** that CloudFormation will create IAM resources, and choose **Submit**.
+   Review the parameters, scroll to the bottom, **Acknowledge** that CloudFormation will create IAM resources, and choose **Submit**.
 
 7. **Monitor stack creation**
 
