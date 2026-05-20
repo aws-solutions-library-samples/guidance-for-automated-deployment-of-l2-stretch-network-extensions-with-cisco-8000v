@@ -184,7 +184,7 @@ This option uses only a web browser — no CLI, scripts, or local tooling requir
 
    Either clone the repository:
    ```bash
-   git clone https://github.com/jleatham/guidance-for-l2-stretch-network-with-cisco-8000v.git
+   git clone https://github.com/aws-solutions-library-samples/guidance-for-l2-stretch-network-with-cisco-8000v.git
    ```
    Or download `deployment/L2E-lisp-cloud-vpc.yaml` directly from the repository's GitHub [page](https://github.com/aws-solutions-library-samples/guidance-for-l2-stretch-network-with-cisco-8000v/blob/main/deployment/L2E-lisp-cloud-vpc.yaml) 
 
