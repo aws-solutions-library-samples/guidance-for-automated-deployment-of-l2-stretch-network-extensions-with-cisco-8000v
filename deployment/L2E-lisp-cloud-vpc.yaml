@@ -78,20 +78,17 @@ Parameters:
   LispCloudVpcCidr:
     AllowedPattern: "^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])(\\/(1[6-9]|2[0-8]))$"
     ConstraintDescription: CIDR block parameter must be in the form x.x.x.x/16-28
-    Default: 172.16.0.0/16
-    Description: CIDR block for the VPC.  Needs to be a superset of the Lisp Private Subnet that will be stretched from on-prem to cloud.
+    Description: 'CIDR block for the AWS VPC. Must be a superset of the Lisp Private Subnet that will be stretched from on-prem to cloud, and must not overlap any existing on-prem or AWS network. Example: 172.16.0.0/16'
     Type: String
   LispCloudPublicSubnetCidr:
     AllowedPattern: "^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])(\\/(1[6-9]|2[0-8]))$"
     ConstraintDescription: CIDR block parameter must be in the form x.x.x.x/16-28
-    Default: 172.16.0.0/24
-    Description: CIDR block for Public subnet
+    Description: 'CIDR block for the public subnet that hosts the Cisco 8000V external interface. Must be inside the VPC CIDR. Example: 172.16.0.0/24'
     Type: String
   LispCloudPrivateSubnetCidr:
     AllowedPattern: "^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])(\\/(1[6-9]|2[0-8]))$"
     ConstraintDescription: CIDR block parameter must be in the form x.x.x.x/16-28
-    Default: 172.16.1.0/24
-    Description: Lisp CIDR block that will be stretched from on-prem to cloud
+    Description: 'CIDR block stretched from on-prem to AWS via LISP. This MUST exactly match the on-prem subnet you intend to extend. Example: 172.16.1.0/24'
     Type: String
   LispCloud8KvInstanceType:
     AllowedValues:
@@ -150,9 +147,8 @@ Parameters:
     NoEcho: 'True'
     Type: String
   LispCloudLoopback:
-    Description: Loopback address of AWS 8Kv Lisp Router
+    Description: 'Loopback address of the AWS 8Kv LISP router, used as the cloud-side LISP RLOC. This address is reachable only inside the IPSec/LISP tunnel and is NOT routed on the public internet, so it can safely be set to a value that is not part of your routable address space. Example: 33.33.33.33'
     Type: String
-    Default: '33.33.33.33'
   IPSecPreShareKey:
     Description: PreShared key for IPSec IKEv1 tunnel. Also using this for Lisp Map Key
     Type: String
@@ -161,9 +157,8 @@ Parameters:
     Description: Public IP address of the on-prem Lisp Router
     Type: String
   LispOnPremLoopback:
-    Description: Loopback address of on-prem Lisp Router
+    Description: 'Loopback address of the on-prem LISP router, used as the on-prem LISP RLOC. Must match the loopback configured on your on-prem Cisco router. This address is reachable only inside the IPSec/LISP tunnel and is NOT routed on the public internet, so it can safely be set to a value that is not part of your routable address space. Example: 11.11.11.11'
     Type: String
-    Default: '11.11.11.11'
   LispCloud8KvPrivateInterfaceIP:
     Description: '(Optional) Manually specify the private IP address for the 8KV private interface (GigabitEthernet2). Leave empty for automatic assignment.'
     Type: String
