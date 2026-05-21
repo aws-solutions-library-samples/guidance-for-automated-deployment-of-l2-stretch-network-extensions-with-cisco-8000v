@@ -176,6 +176,8 @@ This Guidance includes AMI mappings for **32 AWS Regions**, including commercial
 
 Follow these steps to deploy the L2 Stretch Network solution:
 
+> **Security note:** Inbound IPSec ports (UDP 500 and UDP 4500) on the Cisco 8000V are scoped to the `TunnelDestinationPublicIP` you supply at deploy time — they are **not** opened to `0.0.0.0/0`. Management ports (SSH, HTTPS, ICMP) are similarly scoped to the `ParticipantIPAddress` you supply.
+
 ### Option 1: Deploy via the AWS CloudFormation Console (Recommended)
 
 This option uses only a web browser — no CLI, scripts, or local tooling required.
@@ -205,9 +207,9 @@ This option uses only a web browser — no CLI, scripts, or local tooling requir
    **Network Configuration**
    | Parameter | Required? | Guidance |
    |---|---|---|
-   | `LispCloudVpcCidr` | Optional | VPC CIDR for the AWS side. Default `172.16.0.0/16`. Must be a superset of the stretched subnet and must not overlap any existing on-prem or AWS network. |
-   | `LispCloudPublicSubnetCidr` | Optional | Public subnet for the 8000V's external interface. Default `172.16.0.0/24`. Must be inside the VPC CIDR. |
-   | `LispCloudPrivateSubnetCidr` | Optional | The subnet that is stretched between on-prem and AWS. Default `172.16.1.0/24`. Must match the on-prem subnet you intend to extend. |
+   | `LispCloudVpcCidr` | **Required** | VPC CIDR for the AWS side. Must be a superset of the stretched subnet and must not overlap any existing on-prem or AWS network. Example: `172.16.0.0/16`. |
+   | `LispCloudPublicSubnetCidr` | **Required** | Public subnet for the 8000V's external interface. Must be inside the VPC CIDR. Example: `172.16.0.0/24`. |
+   | `LispCloudPrivateSubnetCidr` | **Required** | The subnet stretched between on-prem and AWS via LISP. **Must exactly match the on-prem subnet** you intend to extend. Example: `172.16.1.0/24`. |
    | `LispCloud8KvPrivateInterfaceIP` | Optional | Specific IP for the 8000V private interface. Leave blank for automatic assignment. |
 
    **8Kv Instance Configuration**
@@ -222,10 +224,13 @@ This option uses only a web browser — no CLI, scripts, or local tooling requir
    | `PrivilegePwd` | Required if `AuthenticationType` = UsernamePassword | Admin password (NoEcho — not displayed in the console or stored in the events log). |
 
    **LISP Configuration**
+
+   The two loopback addresses below are used as LISP RLOCs and are reachable **only inside the encrypted IPSec/LISP tunnel** — they are never advertised to the public internet, so they do not need to be part of your routable address space.
+
    | Parameter | Required? | Guidance |
    |---|---|---|
-   | `LispCloudLoopback` | Optional | RLOC for the AWS 8000V. Default `33.33.33.33`. Used only inside the IPSec tunnel; do not pick a value that conflicts with addresses you actually route. |
-   | `LispOnPremLoopback` | Optional | RLOC for the on-prem 8000V. Default `11.11.11.11`. Same constraint as above and must match the on-prem router's loopback. |
+   | `LispCloudLoopback` | **Required** | RLOC for the AWS 8000V. Avoid picking a value that conflicts with addresses you actually route on either side. Example: `33.33.33.33`. |
+   | `LispOnPremLoopback` | **Required** | RLOC for the on-prem 8000V. Must match the loopback configured on your on-prem Cisco router. Example: `11.11.11.11`. |
 
    **IPSec Configuration**
    | Parameter | Required? | Guidance |
