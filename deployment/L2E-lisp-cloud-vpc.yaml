@@ -41,11 +41,11 @@ Metadata:
 
     ParameterLabels:
       LispCloudVpcCidr:
-        default: "VPC CIDR"
+        default: "VPC CIDR (e.g. 172.16.0.0/16)"
       LispCloudPublicSubnetCidr:
-        default: "Public Subnet CIDR"
+        default: "Public Subnet CIDR (e.g. 172.16.0.0/24)"
       LispCloudPrivateSubnetCidr:
-        default: "Private Subnet CIDR"
+        default: "Private Subnet CIDR (e.g. 172.16.1.0/24)"
       LispCloud8KvPrivateInterfaceIP:
         default: "8Kv Private Interface IP (Optional)"
       LispCloud8KvInstanceType:
