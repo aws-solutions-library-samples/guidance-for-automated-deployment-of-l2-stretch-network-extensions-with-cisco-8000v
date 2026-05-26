@@ -174,7 +174,7 @@ This Guidance includes AMI mappings for **32 AWS Regions**, including commercial
 
 ## Deployment Steps
 
-Follow these steps to deploy the L2 Stretch Network solution:
+Please see the detailed [Implementation and Troubleshoting Guide](https://aws-solutions-library-samples.github.io/migration/automated-deployment-of-layer-2-stretch-network-extensions-with-cisco-8000v.html) or follow steps below to deploy the L2 Stretch Network guidance:
 
 > **Security note:** Inbound IPSec ports (UDP 500 and UDP 4500) on the Cisco 8000V are scoped to the `TunnelDestinationPublicIP` you supply at deploy time — they are **not** opened to `0.0.0.0/0`. Management ports (SSH, HTTPS, ICMP) are similarly scoped to the `ParticipantIPAddress` you supply.
 
